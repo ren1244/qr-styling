@@ -1,3 +1,8 @@
+const alphaNumMap = Array.from('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:').reduce((m, c, i) => {
+    m.set(c.codePointAt(), i);
+    return m;
+}, new Map());
+
 class Buffer {
     constructor(byteLength) {
         this.buffer = new Uint8Array(byteLength);
@@ -21,6 +26,64 @@ class Buffer {
         return this;
     }
 
+    addNumber(charLenbits, str) {
+        // mode indicator
+        this.writeValue(1, 4);
+
+        // character count indicator
+        this.writeValue(str.length, charLenbits);
+
+        // write value
+        let x = 0;
+        for (let i = 0; i < str.length; ++i) {
+            let k = str.codePointAt(i) - 48;
+            if (k < 0 || k > 9) {
+                throw '錯誤的數字: ' + str;
+            }
+            x = x * 10 + k;
+            if (i % 3 === 2) {
+                this.writeValue(x, 10);
+                x = 0;
+            }
+        }
+        switch (str.length % 3) {
+            case 1:
+                this.writeValue(x, 4);
+                break;
+            case 2:
+                this.writeValue(x, 7);
+                break;
+        }
+        return this;
+    }
+
+    addAlphaNum(charLenbits, str) {
+        // mode indicator
+        this.writeValue(2, 4);
+
+        // character count indicator
+        this.writeValue(str.length, charLenbits);
+
+        // write value
+        let x = 0;
+        for (let i = 0; i < str.length; ++i) {
+            let k = str.codePointAt(i);
+            if(!alphaNumMap.has(k)) {
+                throw '錯誤的英數字串: ' + str;
+            }
+            k = alphaNumMap.get(k);
+            x = x * 45 + k;
+            if (i & 1) {
+                this.writeValue(x, 11);
+                x = 0;
+            }
+        }
+        if (str.length & 1) {
+            this.writeValue(x, 6);
+        }
+        return this;
+    }
+
     finish() {
         this._addTerminator();
         this._addPadding();
@@ -38,9 +101,10 @@ class Buffer {
 
     _addPadding() {
         let len = this.buffer.byteLength * 8;
+        this.writeValue(0, 8 - (this.idx & 7) & 7);
         while (this.idx < len) {
             let k = this.idx + 16 > len ? len - this.idx : 16;
-            this.writeValue(0xec88 >>> 16 - k, k);
+            this.writeValue(0xec11 >>> 16 - k, k);
         }
     }
 

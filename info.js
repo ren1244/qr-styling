@@ -170,6 +170,12 @@ let tb = [
     ["40-H", 1276, 30, 20, 15, 61, 16],
 ];
 
+let tb2 = [
+    {n: 10, a: 9, b: 8, k: 8},
+    {n: 12, a: 11, b: 16, k: 10},
+    {n: 14, a: 13, b: 16, k: 12},
+];
+
 let dict = {};
 tb.forEach(row => {
     let mch = row[0].match(/^(\d+)-(L|M|Q|H)$/);
@@ -190,7 +196,8 @@ tb.forEach(row => {
         ecLevel,
         totalDataWords: row[1],
         eccWords: row[2],
-        groups
+        groups,
+        charLenBits: tb2[version < 10 ? 0 : (version < 27 ? 1 : 2)]
     };
     // save to dict
     if (dict[ecLevel] === undefined) {
@@ -212,6 +219,7 @@ tb.forEach(row => {
  * @property {number} totalDataWords
  * @property {number} eccWords
  * @property {GroupInfo[]} groups
+ * @property {object.<n: number, a: number, b: number, k: number} charLenBits
  */
 
 /**
