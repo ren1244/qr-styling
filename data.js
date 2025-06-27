@@ -116,3 +116,5 @@ class Buffer {
         return r;
     }
 }
+
+export { Buffer };

@@ -213,13 +213,21 @@ tb.forEach(row => {
  */
 
 /**
+ * @typedef CharLenInfo
+ * @property {number} n Number
+ * @property {number} a AlphaNumber
+ * @property {number} b Byte
+ * @property {number} k Kanji
+ */
+
+/**
  * @typedef {object} Info
  * @property {number} version
  * @property {string} ecLevel
  * @property {number} totalDataWords
  * @property {number} eccWords
  * @property {GroupInfo[]} groups
- * @property {object.<n: number, a: number, b: number, k: number} charLenBits
+ * @property {CharLenInfo} charLenBits
  */
 
 /**
