@@ -34,6 +34,15 @@ class Binary {
     }
 
     /**
+     * 取得特定位置的 uint8 數值
+     * @param {number} pos
+     * @returns {number}
+     */
+    uint8(pos) {
+        return this.arr[pos];
+    }
+
+    /**
      * 顯示數值為二進位字串
      */
     toString() {

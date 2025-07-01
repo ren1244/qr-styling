@@ -201,3 +201,32 @@ describe('測試 group iterator', () => {
         ).toBe([0, 2, 4, 7, 1, 3, 5, 8, 6, 9].join(','));
     });
 });
+
+describe('測試建立錯誤校正', () => {
+    function Mock(msg, ecBytes, group) {
+        let rowCount = 0
+        for (let i = 0; i < group.length; i += 2) {
+            rowCount += group[i];
+        }
+
+        this.binary = new Binary(msg.length + ecBytes * rowCount);
+        msg.forEach(m => {
+            this.binary.write(m, 8);
+        });
+        this.ecLen = ecBytes;
+        this.group = group;
+    }
+
+    Object.assign(Mock.prototype, QrCode.prototype);
+    Mock.prototype.constructor = Mock;
+    Mock.prototype.show = function () {
+        console.log(Array.from(this.binary.arr).join(', '));
+    }
+
+    let msg = Array.from({ length: 22 }, (x, i) => i + 1);
+    let m = new Mock(msg, 2, [2, 3, 4, 4]);
+    m.writeErrorCorrection();
+    test('測試 1~22 @ group(2,3,4,4), ecLen = 2', () => {
+        expect(Array.from(m.binary.arr).join(', ')).toBe([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 4, 4, 45, 42, 4, 8, 172, 168, 20, 8, 81, 85].join(', '));
+    });
+});

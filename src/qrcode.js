@@ -1,5 +1,6 @@
 import NumericMode from './mode/numeric.js';
 import Binary from './binary.js';
+import { GenericGF, ReedSolomonEncoder } from './reedsolomon.js';
 
 const modes = [NumericMode];
 
@@ -224,6 +225,26 @@ QrCode.prototype.padding = function () {
     n = this.len - (this.binary.getLength() >>> 3);
     for (let i = 0; i < n; ++i) {
         this.binary.write(((i & 1) ? 0x11 : 0xec), 8);
+    }
+}
+
+QrCode.prototype.writeErrorCorrection = function () {
+    let enc = new ReedSolomonEncoder(GenericGF.QR_CODE_FIELD_256());
+    let pos = 0;
+    for (let i = 1; i < this.group.length; i += 2) {
+        let nBlocks = this.group[i - 1];
+        let nWords = this.group[i];
+        for (let j = 0; j < nBlocks; ++j) {
+            // 讀取 [pos, pos + nWords) 的資料，寫入
+            let msg = new Uint32Array(nWords + this.ecLen);
+            for (let k = 0; k < nWords; ++k) {
+                msg[k] = this.binary.uint8(pos++);
+            }
+            enc.encode(msg, this.ecLen);
+            for (let k = 0; k < this.ecLen; ++k) {
+                this.binary.write(msg[nWords + k], 8);
+            }
+        }
     }
 }
 
