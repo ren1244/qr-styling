@@ -1,6 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
 import Binary from '../src/binary.js';
 import NumericMode from '../src/mode/numeric.js';
+import QrCode from '../src/qrcode.js';
 
 describe('測試 Binary 的顯示功能', () => {
     test('顯示 6 bit 數值', () => {
@@ -74,7 +75,8 @@ describe('NumericMode 靜態方法測試', () => {
         for (let i = 10; i <= 26; ++i) {
             expect(NumericMode.getCharCountIndicatorLength(i)).toBe(12);
         }
-        for (let i = 27; i <= 40; ++i) {``
+        for (let i = 27; i <= 40; ++i) {
+            ``
             expect(NumericMode.getCharCountIndicatorLength(i)).toBe(14);
         }
     });
@@ -97,7 +99,7 @@ describe('NumericMode 類別測試', () => {
         expect(NumericMode.create('1234', 1).getLength()).toBe(28);
         expect(NumericMode.create('1234', 10).getLength()).toBe(30);
         expect(NumericMode.create('1234', 27).getLength()).toBe(32);
-        
+
         expect(NumericMode.create('12345', 1).getLength()).toBe(31);
         expect(NumericMode.create('12345', 10).getLength()).toBe(33);
         expect(NumericMode.create('12345', 27).getLength()).toBe(35);
@@ -105,7 +107,7 @@ describe('NumericMode 類別測試', () => {
 
     test('測試 write 方法', () => {
         let mode, bin;
-        
+
         mode = NumericMode.create('5', 8);
         bin = new Binary(mode.getLength() + 7 >>> 3);
         mode.write(bin);
@@ -133,3 +135,47 @@ describe('NumericMode 類別測試', () => {
     });
 });
 
+describe('測試 padding', () => {
+
+    function QrCodeMock(size) {
+        this.len = size;
+        this.binary = new Binary(this.len);
+    }
+    
+    Object.assign(QrCodeMock.prototype, QrCode.prototype);
+    QrCodeMock.prototype.constructor = QrCodeMock;
+
+    test('填0測試', () => {
+        let ans = [
+            '1111111111111111',
+            '1111111111111110',
+            '1111111111111100',
+            '1111111111111000',
+            '1111111111110000',
+            '1111111111100000',
+            '1111111111000000',
+            '1111111110000000',
+            '1111111100000000',
+            '1111111000000000',
+            '1111110000000000',
+            '1111100000000000',
+            '1111000011101100',
+            '1110000011101100',
+            '1100000011101100',
+        ];
+        for (let i = 0; i < 15; ++i) {
+            let qr = new QrCodeMock(2);
+            qr.binary.write(0xffff >>> i, 16 - i);
+            qr.padding();
+            expect(qr.binary.toString()).toBe(ans[i]);
+        }
+
+    });
+
+    test('0xec11 填充測試', () => {
+        let qr = new QrCodeMock(4);
+        qr.binary.write(0xffff >>> 14, 16 - 14);
+        qr.padding();
+        expect(qr.binary.toString()).toBe('11000000111011000001000111101100');
+    })
+});

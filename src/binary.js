@@ -27,6 +27,14 @@ class Binary {
     }
 
     /**
+     * 取得目前已寫入幾 bit
+     * @returns {number}
+     */
+    getLength() {
+        return this.len;
+    }
+
+    /**
      * 顯示數值為二進位字串
      */
     toString() {

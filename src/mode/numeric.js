@@ -1,4 +1,4 @@
-import Binary from "../binary";
+import Binary from "../binary.js";
 
 function NumericMode(data, version) {
     this.data = data;
