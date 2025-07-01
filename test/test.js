@@ -2,12 +2,12 @@ import { describe, expect, test } from '@jest/globals';
 import Binary from '../src/binary.js';
 import NumericMode from '../src/mode/numeric.js';
 import QrCode from '../src/qrcode.js';
+import { groupIterator } from '../src/utils.js';
 
 describe('測試 Binary 的顯示功能', () => {
     test('顯示 6 bit 數值', () => {
         let bin = new Binary(10);
         bin.arr = new Uint8Array([0x9c]);
-        bin.buffer = bin.arr.buffer;
         bin.len = 6;
         expect(bin.toString()).toBe('100111');
     });
@@ -15,7 +15,6 @@ describe('測試 Binary 的顯示功能', () => {
     test('顯示 10 bit 數值', () => {
         let bin = new Binary(10);
         bin.arr = new Uint8Array([0x9c, 0x40]);
-        bin.buffer = bin.arr.buffer;
         bin.len = 10;
         expect(bin.toString()).toBe('1001110001');
     });
@@ -141,7 +140,7 @@ describe('測試 padding', () => {
         this.len = size;
         this.binary = new Binary(this.len);
     }
-    
+
     Object.assign(QrCodeMock.prototype, QrCode.prototype);
     QrCodeMock.prototype.constructor = QrCodeMock;
 
@@ -178,4 +177,27 @@ describe('測試 padding', () => {
         qr.padding();
         expect(qr.binary.toString()).toBe('11000000111011000001000111101100');
     })
+});
+
+describe('測試 group iterator', () => {
+    test('只有g1', () => {
+        expect(
+            Array.from(groupIterator([3, 4])).join(',')
+        ).toBe([0, 4, 8, 1, 5, 9, 2, 6, 10, 3, 7, 11].join(','));
+    });
+    test('c1 == c2', () => {
+        expect(
+            Array.from(groupIterator([2, 3, 3, 3])).join(',')
+        ).toBe([0, 3, 6, 9, 12, 1, 4, 7, 10, 13, 2, 5, 8, 11, 14].join(','));
+    });
+    test('c1 > c2', () => {
+        expect(
+            Array.from(groupIterator([2, 3, 2, 2])).join(',')
+        ).toBe([0, 3, 6, 8, 1, 4, 7, 9, 2, 5].join(','));
+    });
+    test('c1 < c2', () => {
+        expect(
+            Array.from(groupIterator([2, 2, 2, 3])).join(',')
+        ).toBe([0, 2, 4, 7, 1, 3, 5, 8, 6, 9].join(','));
+    });
 });

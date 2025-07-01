@@ -1,7 +1,6 @@
 class Binary {
     constructor(nBytes) {
-        this.buffer = new ArrayBuffer(nBytes);
-        this.arr = new Uint8Array(this.buffer);
+        this.arr = new Uint8Array(nBytes);
         this.len = 0;
     }
 
