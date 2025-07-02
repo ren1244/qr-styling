@@ -1,6 +1,7 @@
 import NumericMode from './mode/numeric.js';
 import Binary from './binary.js';
 import { GenericGF, ReedSolomonEncoder } from './reedsolomon.js';
+import { groupIterator } from './utils.js';
 
 const modes = [NumericMode];
 
@@ -177,42 +178,107 @@ const dict = {
         [1222, 30, [10, 15, 67, 16]],
         [1276, 30, [20, 15, 61, 16]]
     ],
+};
+
+function getRemainderBits(version) {
+    if (2 <= version && version <= 6) {
+        return 7;
+    } else if ((14 <= version && version <= 20) || (28 <= version && version <= 34)) {
+        return 3;
+    } else if (21 <= version && version <= 27) {
+        return 4;
+    } else {
+        return 0;
+    }
 }
 
-
 /**
- * @param {string} data 
- * @param {string} errorCorrection 錯誤校正等級：'L', 'M', 'Q', 'H'
+ * @param {string} data 資料
+ * @param {?string} errorCorrection 錯誤校正等級：'L', 'M', 'Q', 'H'
+ * @param {?number} version 版本
  */
-function QrCode(data, errorCorrection) {
+function QrCode(data, errorCorrection, version) {
     this.data = data;
     this.errorCorrection = errorCorrection || 'M';
 
-    // initial this.version and this.modeInst
-    for (let version = 1; version <= 40; ++version) {
-        let inst = modes[i].create(this.data, version);
-        let info = dict[this.errorCorrection][version];
-        let size = info[0] * 8;
-        if (inst !== null && inst.getLength() <= size) {
-            this.version = version;
-            this.modeInst = inst;
-            break;
+    if (version) {
+        if (!this.validVersion(version)) {
+            throw `版本 ${version} 容量不夠`;
         }
+        this.version = version;
+    } else {
+        this.version = this.autoSelectVersion();
     }
+    this.mode = this.minLenMode(this.version);
 
-    // initial this.binary
-    let [len, ecLen, group] = dict[this.errorCorrection][version];
-    let nBytes = len + ecLen * (group[0] + (group[2] !== undefined ? group[2] : 0));
-    this.binary = new Binary(nBytes);
+    let [dataLen, ecLen, group] = dict[this.errorCorrection][this.version];
 
-    // cache
-    this.len = len;
+    this.dataLen = dataLen;
     this.ecLen = ecLen;
     this.group = group;
+    this.nRows = group[0] + (group[2] !== undefined ? group[2] : 0);
+    this.remainBits = getRemainderBits(this.version);
+    this.bitSize = (dataLen + ecLen * this.nRows) * 8 + this.remainBits;
+    this.byteSize = this.bitSize + 7 >>> 3;
+    this.binary = new Binary(this.byteSize);
 }
 
+/**
+ * 取得某版本下，能產生最短長度的 mode 實例
+ * @param {number} version 版本
+ * @returns {NumericMode|AlphanumericMode|ByteMode|KanjiMode|null}
+ */
+QrCode.prototype.minLenMode = function (version) {
+    let minLen = null;
+    let minInst = null;
+    for (let i = 0; i < modes.length; ++i) {
+        let inst = modes[i].create(this.data, version);
+        if (inst !== null) {
+            let len = inst.getLength();
+            if (minInst) {
+                if (len < minLen) {
+                    minLen = len;
+                    minInst = inst;
+                }
+            } else {
+                minLen = len;
+                minInst = inst;
+            }
+        }
+    }
+    return minInst;
+}
+
+/**
+ * 驗證某版本是否可使用
+ * @param {number} version 版本
+ * @returns {boolean}
+ */
+QrCode.prototype.validVersion = function(version) {
+    let mode = this.minLenMode(version);
+    let info = dict[this.errorCorrection][version];
+    let size = info[0] * 8;
+    return mode !== null && mode.getLength() <= size;
+}
+
+/**
+ * 自動選擇最低版本
+ * @returns {number}
+ */
+QrCode.prototype.autoSelectVersion = function() {
+    for (let version = 1; version <= 40; ++version) {
+        if (this.validVersion(version)) {
+            return version;
+        }
+    }
+    throw '無法找到合適的版本';
+}
+
+/**
+ * data code word 加入 padding（0000 與 0xec11）
+ */
 QrCode.prototype.padding = function () {
-    const dataBits = this.len * 8;
+    const dataBits = this.dataLen * 8;
     // 補 0000
     let n = dataBits - this.binary.getLength();
     this.binary.write(0, n < 4 ? n : 4);
@@ -222,12 +288,15 @@ QrCode.prototype.padding = function () {
     this.binary.write(0, n);
 
     // 補 0xec11
-    n = this.len - (this.binary.getLength() >>> 3);
+    n = this.dataLen - (this.binary.getLength() >>> 3);
     for (let i = 0; i < n; ++i) {
         this.binary.write(((i & 1) ? 0x11 : 0xec), 8);
     }
 }
 
+/**
+ * 加入 error correction 資料（依據群組）
+ */
 QrCode.prototype.writeErrorCorrection = function () {
     let enc = new ReedSolomonEncoder(GenericGF.QR_CODE_FIELD_256());
     let pos = 0;
@@ -246,6 +315,30 @@ QrCode.prototype.writeErrorCorrection = function () {
             }
         }
     }
+}
+
+/**
+ * 依據群組重新排列
+ */
+QrCode.prototype.rerange = function () {
+    let newBinary = new Binary(this.byteSize);
+
+    // 寫入 data code words
+    let it = groupIterator(this.group);
+    for (let pos of it) {
+        newBinary.write(this.binary.uint8(pos), 8);
+    }
+
+    // 寫入 ec code words
+    it = groupIterator([this.nRows, this.ecLen]);
+    for (let pos of it) {
+        newBinary.write(this.binary.uint8(pos + this.dataLen), 8);
+    }
+
+    if (this.remainBits > 0) {
+        newBinary.write(0, this.remainBits);
+    }
+    this.binary = newBinary;
 }
 
 export default QrCode;

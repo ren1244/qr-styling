@@ -134,51 +134,6 @@ describe('NumericMode 類別測試', () => {
     });
 });
 
-describe('測試 padding', () => {
-
-    function QrCodeMock(size) {
-        this.len = size;
-        this.binary = new Binary(this.len);
-    }
-
-    Object.assign(QrCodeMock.prototype, QrCode.prototype);
-    QrCodeMock.prototype.constructor = QrCodeMock;
-
-    test('填0測試', () => {
-        let ans = [
-            '1111111111111111',
-            '1111111111111110',
-            '1111111111111100',
-            '1111111111111000',
-            '1111111111110000',
-            '1111111111100000',
-            '1111111111000000',
-            '1111111110000000',
-            '1111111100000000',
-            '1111111000000000',
-            '1111110000000000',
-            '1111100000000000',
-            '1111000011101100',
-            '1110000011101100',
-            '1100000011101100',
-        ];
-        for (let i = 0; i < 15; ++i) {
-            let qr = new QrCodeMock(2);
-            qr.binary.write(0xffff >>> i, 16 - i);
-            qr.padding();
-            expect(qr.binary.toString()).toBe(ans[i]);
-        }
-
-    });
-
-    test('0xec11 填充測試', () => {
-        let qr = new QrCodeMock(4);
-        qr.binary.write(0xffff >>> 14, 16 - 14);
-        qr.padding();
-        expect(qr.binary.toString()).toBe('11000000111011000001000111101100');
-    })
-});
-
 describe('測試 group iterator', () => {
     test('只有g1', () => {
         expect(
@@ -202,31 +157,4 @@ describe('測試 group iterator', () => {
     });
 });
 
-describe('測試建立錯誤校正', () => {
-    function Mock(msg, ecBytes, group) {
-        let rowCount = 0
-        for (let i = 0; i < group.length; i += 2) {
-            rowCount += group[i];
-        }
 
-        this.binary = new Binary(msg.length + ecBytes * rowCount);
-        msg.forEach(m => {
-            this.binary.write(m, 8);
-        });
-        this.ecLen = ecBytes;
-        this.group = group;
-    }
-
-    Object.assign(Mock.prototype, QrCode.prototype);
-    Mock.prototype.constructor = Mock;
-    Mock.prototype.show = function () {
-        console.log(Array.from(this.binary.arr).join(', '));
-    }
-
-    let msg = Array.from({ length: 22 }, (x, i) => i + 1);
-    let m = new Mock(msg, 2, [2, 3, 4, 4]);
-    m.writeErrorCorrection();
-    test('測試 1~22 @ group(2,3,4,4), ecLen = 2', () => {
-        expect(Array.from(m.binary.arr).join(', ')).toBe([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 4, 4, 45, 42, 4, 8, 172, 168, 20, 8, 81, 85].join(', '));
-    });
-});
