@@ -22,7 +22,7 @@ SvgCanvas.prototype.setSize = function(size) {
     rect.setAttributeNS(null, 'width', this.qrSize + this.border * 2);
     rect.setAttributeNS(null, 'height', this.qrSize + this.border * 2);
     rect.setAttributeNS(null, 'stroke', 'none');
-    rect.setAttributeNS(null, 'fill', '#ccc');
+    rect.setAttributeNS(null, 'fill', 'white');
     rect.setAttributeNS(null, 'shape-rendering', 'crispEdges');
 
     this.svg.appendChild(rect);

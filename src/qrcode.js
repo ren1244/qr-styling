@@ -1,10 +1,11 @@
 import NumericMode from './mode/numeric.js';
+import ByteMode from './mode/byte.js';
 import Binary from './binary.js';
 import { GenericGF, ReedSolomonEncoder } from './reedsolomon.js';
 import { groupIterator } from './utils.js';
 import ArrayCanvas from './canvas/array-canvas.js';
 
-const modes = [NumericMode];
+const modes = [NumericMode, ByteMode];
 
 const dict = {
     "L": [
@@ -482,6 +483,8 @@ QrCode.prototype.render = function (canvas) {
     }
 
     // 以下根據不同 mask 版本會不同
+    let selectMaskVersion = null;
+    let minScore = null;
     for (let mask = 0; mask < 8; ++mask) {
         let maskFunction = formatFunc[mask];
         let formatMask = ['M', 'L', 'H', 'Q'].indexOf(this.errorCorrection) << 3 | mask;
@@ -524,11 +527,15 @@ QrCode.prototype.render = function (canvas) {
             }
             ++i;
         }
+
+        // 計算分數
+        let score = arrCanvas.score1(mask) + arrCanvas.score2(mask) + arrCanvas.score3(mask)+ arrCanvas.score4(mask);
+        if(selectMaskVersion === null || minScore > score) {
+            minScore = score;
+            selectMaskVersion = mask;
+        }
     }
-
-    arrCanvas.dump(canvas, 2);
-
-    console.log(this.binary.toString());
+    arrCanvas.dump(canvas, selectMaskVersion);
 }
 
 export default QrCode;

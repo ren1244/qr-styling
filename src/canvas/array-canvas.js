@@ -52,6 +52,119 @@ ArrayCanvas.prototype = {
                 }
             }
         }
+    },
+
+    score1(maskVersion) {
+        // 水平掃描 5 個連續
+        let score = 0;
+        for (let r = 0; r < this.sz; ++r) {
+            let lastVal = null;
+            let count = 0;
+            for (let c = 0; c < this.sz; ++c) {
+                let v = this.getPoint(r, c, maskVersion);
+                if (v === null) {
+                    throw '還有沒填入的格子';
+                }
+                if (v === lastVal) {
+                    ++count;
+                } else {
+                    lastVal = v;
+                    if (count > 4) {
+                        score += count - 2;
+                    }
+                    count = 1;
+                }
+            }
+            if (count > 4) {
+                score += count - 2;
+            }
+        }
+        for (let c = 0; c < this.sz; ++c) {
+            let lastVal = null;
+            let count = 0;
+            for (let r = 0; r < this.sz; ++r) {
+                let v = this.getPoint(r, c, maskVersion);
+                if (v === null) {
+                    throw '還有沒填入的格子';
+                }
+                if (v === lastVal) {
+                    ++count;
+                } else {
+                    lastVal = v;
+                    if (count > 4) {
+                        score += count - 2;
+                    }
+                    count = 1;
+                }
+            }
+            if (count > 4) {
+                score += count - 2;
+            }
+        }
+
+        return score;
+    },
+
+    score2(maskVersion) {
+        let score = 0;
+        for (let r = 0; r < this.sz - 1; ++r) {
+            for (let c = 0; c < this.sz - 1; ++c) {
+                let v = this.getPoint(r, c, maskVersion);
+                if (v === null) {
+                    throw '還有沒填入的格子';
+                }
+                if (
+                    v === this.getPoint(r, c + 1, maskVersion) &&
+                    v === this.getPoint(r + 1, c + 1, maskVersion) &&
+                    v === this.getPoint(r + 1, c, maskVersion)
+                ) {
+                    score += 3;
+                }
+            }
+        }
+        return score;
+    },
+
+    score3(maskVersion) {
+        let score = 0;
+        let v0 = 93;   // 00001011101
+        let v1 = 1488; // 10111010000
+        for (let i = 0; i < this.sz; ++i) {
+            let j;
+            let v;
+            let t0 = 0;
+            let t1 = 0;
+            for (j = 0; j < 10; ++j) {
+                v = this.getPoint(i, j, maskVersion);
+                t0 = (t0 << 1 | v) & 0x7ff;
+                v = this.getPoint(j, i, maskVersion);
+                t1 = (t1 << 1 | v) & 0x7ff;
+            }
+            for (; j < this.sz; ++j) {
+                v = this.getPoint(i, j, maskVersion);
+                t0 = (t0 << 1 | v) & 0x7ff;
+                v = this.getPoint(j, i, maskVersion);
+                t1 = (t1 << 1 | v) & 0x7ff;
+                if (t0 === v0 || t0 === v1) {
+                    score += 40;
+                }
+                if (t1 === v0 || t1 === v1) {
+                    score += 40;
+                }
+            }
+        }
+        return score;
+    },
+
+    score4(maskVersion) {
+        let blackCount = 0;
+        let total = this.sz * this.sz;
+        for (let r = 0; r < this.sz; ++r) {
+            for (let c = 0; c < this.sz; ++c) {
+                blackCount += this.getPoint(r, c, maskVersion);
+            }
+        }
+        return (Math.abs(blackCount * 20 - 10 * total) / total | 0) * 10;
     }
 };
 
