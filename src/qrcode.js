@@ -2,6 +2,7 @@ import NumericMode from './mode/numeric.js';
 import Binary from './binary.js';
 import { GenericGF, ReedSolomonEncoder } from './reedsolomon.js';
 import { groupIterator } from './utils.js';
+import ArrayCanvas from './canvas/array-canvas.js';
 
 const modes = [NumericMode];
 
@@ -224,8 +225,20 @@ const alignPatPos = [
     [6, 30, 58, 86, 114, 142, 170],
 ];
 
+// key 為 ecLevel << 3 | mask, value 為格式資訊，需再 xor 21522
 const formatPat = [0, 311, 622, 857, 491, 220, 901, 690, 982, 737, 440, 143, 573, 778, 83, 356, 667, 940, 245, 450, 880, 583, 286, 41, 333, 122, 803, 532, 166, 401, 712, 1023];
+const formatFunc = [
+    (r, c) => ((r + c) % 2 === 0),
+    (r, c) => (r % 2 === 0),
+    (r, c) => (c % 3 === 0),
+    (r, c) => ((r + c) % 3 === 0),
+    (r, c) => (((c - c % 3) / 3 + (r >>> 1)) % 2 === 0),
+    (r, c) => ((r * c) % 2 + (r * c) % 3 === 0),
+    (r, c) => (((r * c) % 3 + r * c) % 2 === 0),
+    (r, c) => (((r * c) % 3 + r + c) % 2 === 0),
+]
 
+// 版本 7 以上要填入版本資訊
 const versionPat = [null, null, null, null, null, null, null, 42232, 63108, 157028, 208020, 114548, 72588, 231532, 180636, 21116, 31554, 190626, 237906, 78514, 104010, 198058, 150618, 57274, 36294, 138790, 219094, 115766, 90318, 258862, 178910, 10558, 175681, 15777, 95313, 255921, 213833, 118953, 39257, 133817, 153797];
 
 function getRemainderBits(version) {
@@ -397,8 +410,9 @@ QrCode.prototype.end = function () {
 }
 
 QrCode.prototype.render = function (canvas) {
+    let arrCanvas = new ArrayCanvas();
     let size = 21 + 4 * (this.version - 1);
-    canvas.setSize(size);
+    arrCanvas.setSize(size);
 
     // 定位圖案與分隔圖案
     // 中心位於: (3,3), (3,size-4), (size-4, 3)
@@ -411,18 +425,18 @@ QrCode.prototype.render = function (canvas) {
                 }
                 let distance = Math.max(Math.abs(p.r - r), Math.abs(p.c - c));
                 let val = distance === 2 || distance === 4 ? 0 : 1;
-                canvas.setPoint(r, c, val);
+                arrCanvas.setPoint(r, c, val);
             }
         }
     });
 
     // 黑色碼元
-    canvas.setPoint(4 * this.version + 9, 8, 1);
+    arrCanvas.setPoint(4 * this.version + 9, 8, 1);
 
     // 定時圖案
     for (let i = 8; i < size - 8; ++i) {
-        canvas.setPoint(6, i, i & 1 ^ 1);
-        canvas.setPoint(i, 6, i & 1 ^ 1);
+        arrCanvas.setPoint(6, i, i & 1 ^ 1);
+        arrCanvas.setPoint(i, 6, i & 1 ^ 1);
     }
 
     // 對齊圖案
@@ -443,7 +457,7 @@ QrCode.prototype.render = function (canvas) {
                         for (let dc = -2; dc <= 2; ++dc) {
                             let distance = Math.max(Math.abs(dr), Math.abs(dc));
                             let val = distance === 1 ? 0 : 1;
-                            canvas.setPoint(r + dr, c + dc, val);
+                            arrCanvas.setPoint(r + dr, c + dc, val);
                         }
                     }
                 }
@@ -462,53 +476,58 @@ QrCode.prototype.render = function (canvas) {
             let val = ver >>> i & 1;
             let dc = 2 - i % 3;
             let dr = 5 - (i - i % 3) / 3;
-            canvas.setPoint(r0 + dr, c0 + dc, val);
-            canvas.setPoint(r1 + dc, c1 + dr, val);
+            arrCanvas.setPoint(r0 + dr, c0 + dc, val);
+            arrCanvas.setPoint(r1 + dc, c1 + dr, val);
         }
     }
 
-    // 格式資訊
-    let mask = 0;
-    let maskFunction = (r, c) => r + c + 1 & 1;
-    let formatMask = ['M', 'L', 'H', 'Q'].indexOf(this.errorCorrection) << 3 | mask;
-    let fmtmsk = (formatMask << 10 | formatPat[formatMask]) ^ 21522;
-    for (let i = 0; i < 15; ++i) {
-        let r = i < 8 ? 8 : (i === 8 ? 7 : 14 - i);
-        let c = i < 6 ? i : (i === 6 ? 7 : 8);
-        let val = fmtmsk >>> 14 - i & 1;
-        canvas.setPoint(r, c, val);
+    // 以下根據不同 mask 版本會不同
+    for (let mask = 0; mask < 8; ++mask) {
+        let maskFunction = formatFunc[mask];
+        let formatMask = ['M', 'L', 'H', 'Q'].indexOf(this.errorCorrection) << 3 | mask;
+        let fmtmsk = (formatMask << 10 | formatPat[formatMask]) ^ 21522;
 
-        r = i < 7 ? size - 1 - i : 8;
-        c = i < 7 ? 8 : size - 8 + i - 7;
-        canvas.setPoint(r, c, val);
+        // 格式資訊
+        for (let i = 0; i < 15; ++i) {
+            let r = i < 8 ? 8 : (i === 8 ? 7 : 14 - i);
+            let c = i < 6 ? i : (i === 6 ? 7 : 8);
+            let val = fmtmsk >>> 14 - i & 1;
+            arrCanvas.setPoint(r, c, val, mask);
+
+            r = i < 7 ? size - 1 - i : 8;
+            c = i < 7 ? 8 : size - 8 + i - 7;
+            arrCanvas.setPoint(r, c, val, mask);
+        }
+
+        // 填入資料
+        let six = (size - 1) * size - size * 6;
+        let i = 0;
+        let k = 0;
+        let v = this.binary.bit(k);
+        let s2 = size * 2;
+        while (v !== null) {
+            let j = (i - i % s2) / s2;
+            let up = (j & 1) ? false : true;
+            let r = i % s2 >>> 1;
+            r = up ? size - 1 - r : r;
+            let c = size - 2 - j * 2;
+            if ((up && (i + 1 & 1)) || (!up && (i + 1 & 1))) {
+                ++c;
+            }
+            if (i >= six) {
+                --c;
+            }
+            if (arrCanvas.getPoint(r, c, mask) === null) {
+                //console.log(r, c, v);
+                arrCanvas.setPoint(r, c, v ^ maskFunction(r, c), mask);
+                v = this.binary.bit(++k);
+            }
+            ++i;
+        }
     }
 
-    // 填入資料
-    let six = (size - 1) * size - size * 6;
-    let i = 0;
-    let k = 0;
-    let v = this.binary.bit(k);
-    let s2 = size * 2;
-    while (v !== null) {
-        let j = (i - i % s2) / s2;
-        let up = (j & 1) ? false : true;
-        let r = i % s2 >>> 1;
-        r = up ? size - 1 - r : r;
-        let c = size - 2 - j * 2;
-        if ((up && (i + 1 & 1)) || (!up && (i + 1 & 1))) {
-            ++c;
-        }
-        if (i >= six) {
-            --c;
-        }
-        if (canvas.getPoint(r, c) === null) {
-            //console.log(r, c, v);
-            canvas.setPoint(r, c, v ^ maskFunction(r, c));
-            v = this.binary.bit(++k);
-        }
+    arrCanvas.dump(canvas, 2);
 
-        ++i;
-    }
     console.log(this.binary.toString());
 }
 
