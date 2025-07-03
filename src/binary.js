@@ -43,6 +43,17 @@ class Binary {
     }
 
     /**
+     * 取得 bit k 是 0 或 1
+     * @param {?number} k 0, 1, null
+     */
+    bit(k) {
+        if(0 <= k && k < this.len) {
+            return this.arr[k >>> 3] >>> 7 - (k & 7) & 1;
+        }
+        return null;
+    }
+
+    /**
      * 顯示數值為二進位字串
      */
     toString() {

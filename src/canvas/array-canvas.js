@@ -13,7 +13,7 @@ ArrayCanvas.prototype = {
 
     setSize(size) {
         this.sz = size;
-        this.arr = Array.from({length: size}, x => Array.from({length: size}, x => null));
+        this.arr = Array.from({ length: size }, x => Array.from({ length: size }, x => null));
     },
 
     setPoint(row, col, val) {

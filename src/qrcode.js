@@ -180,6 +180,54 @@ const dict = {
     ],
 };
 
+const alignPatPos = [
+    null,
+    null,
+    [6, 18],
+    [6, 22],
+    [6, 26],
+    [6, 30],
+    [6, 34],
+    [6, 22, 38],
+    [6, 24, 42],
+    [6, 26, 46],
+    [6, 28, 50],
+    [6, 30, 54],
+    [6, 32, 58],
+    [6, 34, 62],
+    [6, 26, 46, 66],
+    [6, 26, 48, 70],
+    [6, 26, 50, 74],
+    [6, 30, 54, 78],
+    [6, 30, 56, 82],
+    [6, 30, 58, 86],
+    [6, 34, 62, 90],
+    [6, 28, 50, 72, 94],
+    [6, 26, 50, 74, 98],
+    [6, 30, 54, 78, 102],
+    [6, 28, 54, 80, 106],
+    [6, 32, 58, 84, 110],
+    [6, 30, 58, 86, 114],
+    [6, 34, 62, 90, 118],
+    [6, 26, 50, 74, 98, 122],
+    [6, 30, 54, 78, 102, 126],
+    [6, 26, 52, 78, 104, 130],
+    [6, 30, 56, 82, 108, 134],
+    [6, 34, 60, 86, 112, 138],
+    [6, 30, 58, 86, 114, 142],
+    [6, 34, 62, 90, 118, 146],
+    [6, 30, 54, 78, 102, 126, 150],
+    [6, 24, 50, 76, 102, 128, 154],
+    [6, 28, 54, 80, 106, 132, 158],
+    [6, 32, 58, 84, 110, 136, 162],
+    [6, 26, 54, 82, 110, 138, 166],
+    [6, 30, 58, 86, 114, 142, 170],
+];
+
+const formatPat = [0, 311, 622, 857, 491, 220, 901, 690, 982, 737, 440, 143, 573, 778, 83, 356, 667, 940, 245, 450, 880, 583, 286, 41, 333, 122, 803, 532, 166, 401, 712, 1023];
+
+const versionPat = [null, null, null, null, null, null, null, 42232, 63108, 157028, 208020, 114548, 72588, 231532, 180636, 21116, 31554, 190626, 237906, 78514, 104010, 198058, 150618, 57274, 36294, 138790, 219094, 115766, 90318, 258862, 178910, 10558, 175681, 15777, 95313, 255921, 213833, 118953, 39257, 133817, 153797];
+
 function getRemainderBits(version) {
     if (2 <= version && version <= 6) {
         return 7;
@@ -254,7 +302,7 @@ QrCode.prototype.minLenMode = function (version) {
  * @param {number} version 版本
  * @returns {boolean}
  */
-QrCode.prototype.validVersion = function(version) {
+QrCode.prototype.validVersion = function (version) {
     let mode = this.minLenMode(version);
     let info = dict[this.errorCorrection][version];
     let size = info[0] * 8;
@@ -265,7 +313,7 @@ QrCode.prototype.validVersion = function(version) {
  * 自動選擇最低版本
  * @returns {number}
  */
-QrCode.prototype.autoSelectVersion = function() {
+QrCode.prototype.autoSelectVersion = function () {
     for (let version = 1; version <= 40; ++version) {
         if (this.validVersion(version)) {
             return version;
@@ -339,6 +387,129 @@ QrCode.prototype.rerange = function () {
         newBinary.write(0, this.remainBits);
     }
     this.binary = newBinary;
+}
+
+QrCode.prototype.end = function () {
+    this.mode.write(this.binary);
+    this.padding();
+    this.writeErrorCorrection();
+    this.rerange();
+}
+
+QrCode.prototype.render = function (canvas) {
+    let size = 21 + 4 * (this.version - 1);
+    canvas.setSize(size);
+
+    // 定位圖案與分隔圖案
+    // 中心位於: (3,3), (3,size-4), (size-4, 3)
+    const centerPoings = [{ r: 3, c: 3 }, { r: 3, c: size - 4 }, { r: size - 4, c: 3 }];
+    centerPoings.forEach(p => {
+        for (let r = p.r - 4; r <= p.r + 4; ++r) {
+            for (let c = p.c - 4; c <= p.c + 4; ++c) {
+                if (r < 0 || c < 0 || r >= size || c >= size) {
+                    continue;
+                }
+                let distance = Math.max(Math.abs(p.r - r), Math.abs(p.c - c));
+                let val = distance === 2 || distance === 4 ? 0 : 1;
+                canvas.setPoint(r, c, val);
+            }
+        }
+    });
+
+    // 黑色碼元
+    canvas.setPoint(4 * this.version + 9, 8, 1);
+
+    // 定時圖案
+    for (let i = 8; i < size - 8; ++i) {
+        canvas.setPoint(6, i, i & 1 ^ 1);
+        canvas.setPoint(i, 6, i & 1 ^ 1);
+    }
+
+    // 對齊圖案
+    let align = alignPatPos[this.version];
+    if (align !== null) {
+        align.forEach(r => {
+            align.forEach(c => {
+                let i;
+                for (i = centerPoings.length - 1; i >= 0; --i) {
+                    let p = centerPoings[i];
+                    let distance = Math.max(Math.abs(p.r - r), Math.abs(p.c - c));
+                    if (distance < 7) {
+                        break;
+                    }
+                }
+                if (i < 0) {
+                    for (let dr = -2; dr <= 2; ++dr) {
+                        for (let dc = -2; dc <= 2; ++dc) {
+                            let distance = Math.max(Math.abs(dr), Math.abs(dc));
+                            let val = distance === 1 ? 0 : 1;
+                            canvas.setPoint(r + dr, c + dc, val);
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    // 版本資訊
+    let ver = versionPat[this.version];
+    if (ver !== null) {
+        let c0 = size - 11;
+        let r0 = 0;
+        let c1 = 0;
+        let r1 = size - 11;
+        for (let i = 0; i < 18; ++i) {
+            let val = ver >>> i & 1;
+            let dc = 2 - i % 3;
+            let dr = 5 - (i - i % 3) / 3;
+            canvas.setPoint(r0 + dr, c0 + dc, val);
+            canvas.setPoint(r1 + dc, c1 + dr, val);
+        }
+    }
+
+    // 格式資訊
+    let mask = 0;
+    let maskFunction = (r, c) => r + c + 1 & 1;
+    let formatMask = ['M', 'L', 'H', 'Q'].indexOf(this.errorCorrection) << 3 | mask;
+    let fmtmsk = (formatMask << 10 | formatPat[formatMask]) ^ 21522;
+    for (let i = 0; i < 15; ++i) {
+        let r = i < 8 ? 8 : (i === 8 ? 7 : 14 - i);
+        let c = i < 6 ? i : (i === 6 ? 7 : 8);
+        let val = fmtmsk >>> 14 - i & 1;
+        canvas.setPoint(r, c, val);
+
+        r = i < 7 ? size - 1 - i : 8;
+        c = i < 7 ? 8 : size - 8 + i - 7;
+        canvas.setPoint(r, c, val);
+    }
+
+    // 填入資料
+    let six = (size - 1) * size - size * 6;
+    let i = 0;
+    let k = 0;
+    let v = this.binary.bit(k);
+    let s2 = size * 2;
+    while (v !== null) {
+        let j = (i - i % s2) / s2;
+        let up = (j & 1) ? false : true;
+        let r = i % s2 >>> 1;
+        r = up ? size - 1 - r : r;
+        let c = size - 2 - j * 2;
+        if ((up && (i + 1 & 1)) || (!up && (i + 1 & 1))) {
+            ++c;
+        }
+        if (i >= six) {
+            --c;
+        }
+        if (canvas.getPoint(r, c) === null) {
+            //console.log(r, c, v);
+            canvas.setPoint(r, c, v ^ maskFunction(r, c));
+            v = this.binary.bit(++k);
+        }
+
+        ++i;
+    }
+    console.log(this.binary.toString());
 }
 
 export default QrCode;
