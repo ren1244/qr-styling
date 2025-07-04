@@ -55,53 +55,33 @@ ArrayCanvas.prototype = {
     },
 
     score1(maskVersion) {
-        // 水平掃描 5 個連續
         let score = 0;
-        for (let r = 0; r < this.sz; ++r) {
-            let lastVal = null;
-            let count = 0;
-            for (let c = 0; c < this.sz; ++c) {
-                let v = this.getPoint(r, c, maskVersion);
-                if (v === null) {
-                    throw '還有沒填入的格子';
-                }
-                if (v === lastVal) {
-                    ++count;
-                } else {
-                    lastVal = v;
-                    if (count > 4) {
-                        score += count - 2;
+        for (let i = 0; i < this.sz; ++i) {
+            let arr = [
+                {val: null, count: null, cur: null},
+                {val: null, count: null, cur: null}
+            ];
+            for (let j = 0; j < this.sz; ++j) {
+                arr[0].cur = this.getPoint(i, j, maskVersion);
+                arr[1].cur = this.getPoint(j, i, maskVersion);
+                arr.forEach(o => {
+                    if(o.val === o.cur) {
+                        ++o.count;
+                    } else {
+                        if(o.count > 4) {
+                            score += o.count - 2;
+                        }
+                        o.val = o.cur;
+                        o.count = 1;
                     }
-                    count = 1;
+                });
+            }
+            arr.forEach(o => {
+                if(o.count > 4) {
+                    score += o.count - 2;
                 }
-            }
-            if (count > 4) {
-                score += count - 2;
-            }
+            });
         }
-        for (let c = 0; c < this.sz; ++c) {
-            let lastVal = null;
-            let count = 0;
-            for (let r = 0; r < this.sz; ++r) {
-                let v = this.getPoint(r, c, maskVersion);
-                if (v === null) {
-                    throw '還有沒填入的格子';
-                }
-                if (v === lastVal) {
-                    ++count;
-                } else {
-                    lastVal = v;
-                    if (count > 4) {
-                        score += count - 2;
-                    }
-                    count = 1;
-                }
-            }
-            if (count > 4) {
-                score += count - 2;
-            }
-        }
-
         return score;
     },
 
@@ -110,9 +90,6 @@ ArrayCanvas.prototype = {
         for (let r = 0; r < this.sz - 1; ++r) {
             for (let c = 0; c < this.sz - 1; ++c) {
                 let v = this.getPoint(r, c, maskVersion);
-                if (v === null) {
-                    throw '還有沒填入的格子';
-                }
                 if (
                     v === this.getPoint(r, c + 1, maskVersion) &&
                     v === this.getPoint(r + 1, c + 1, maskVersion) &&
