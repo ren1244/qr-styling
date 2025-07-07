@@ -1,11 +1,12 @@
 import NumericMode from './mode/numeric.js';
 import ByteMode from './mode/byte.js';
+import AlphanumericMode from './mode/alphanumeric.js';
 import Binary from './binary.js';
-import { GenericGF, ReedSolomonEncoder } from './reedsolomon.js';
+import { rs } from './rs.js';
 import { groupIterator } from './utils.js';
 import ArrayCanvas from './canvas/array-canvas.js';
 
-const modes = [NumericMode, ByteMode];
+const modes = [NumericMode, AlphanumericMode, ByteMode];
 
 const dict = {
     "L": [
@@ -360,20 +361,19 @@ QrCode.prototype.padding = function () {
  * 加入 error correction 資料（依據群組）
  */
 QrCode.prototype.writeErrorCorrection = function () {
-    let enc = new ReedSolomonEncoder(GenericGF.QR_CODE_FIELD_256());
     let pos = 0;
     for (let i = 1; i < this.group.length; i += 2) {
         let nBlocks = this.group[i - 1];
         let nWords = this.group[i];
         for (let j = 0; j < nBlocks; ++j) {
             // 讀取 [pos, pos + nWords) 的資料，寫入
-            let msg = new Uint32Array(nWords + this.ecLen);
+            let msg = new Uint8Array(nWords);
             for (let k = 0; k < nWords; ++k) {
                 msg[k] = this.binary.uint8(pos++);
             }
-            enc.encode(msg, this.ecLen);
+            let ec = rs(msg, this.ecLen);
             for (let k = 0; k < this.ecLen; ++k) {
-                this.binary.write(msg[nWords + k], 8);
+                this.binary.write(ec[k], 8);
             }
         }
     }
@@ -529,13 +529,14 @@ QrCode.prototype.render = function (canvas) {
         }
 
         // 計算分數
-        let score = arrCanvas.score1(mask) + arrCanvas.score2(mask) + arrCanvas.score3(mask)+ arrCanvas.score4(mask);
-        if(selectMaskVersion === null || minScore > score) {
+        let score = arrCanvas.score1(mask) + arrCanvas.score2(mask) + arrCanvas.score3(mask) + arrCanvas.score4(mask);
+        if (selectMaskVersion === null || minScore > score) {
             minScore = score;
             selectMaskVersion = mask;
         }
     }
     arrCanvas.dump(canvas, selectMaskVersion);
+    this.selectMaskVersion = selectMaskVersion;
 }
 
 export default QrCode;

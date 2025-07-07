@@ -41,6 +41,7 @@ SvgCanvas.prototype.setPoint = function(row, col, val) {
 }
 
 SvgCanvas.prototype.render = function () {
+    this.parentElement.innerHTML = '';
     this.parentElement.appendChild(this.svg);
 };
 
