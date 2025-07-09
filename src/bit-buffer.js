@@ -1,4 +1,4 @@
-import { get_division, p_mod2 } from './rs.js';
+import { get_division, p_mod } from './rs.js';
 
 function BitBuffer(nRow1, nCol1, nRow2, nCol2, nColEC, remainderBits) {
     this.nRow1 = nRow1;
@@ -91,7 +91,7 @@ BitBuffer.prototype = {
             r[k] = this.arr[this.writeIndex(i)];
             if (k === this.nCol1 - 1) {
                 r.fill(0, this.nCol1);
-                p_mod2(r, division);
+                p_mod(r, division);
                 for (let j = 0; j < this.nColEC; ++j) {
                     this.arr[this.writeIndex(ecIdx++)] = r[this.nCol1 + j];
                     this.bitIdx += 8;
@@ -104,7 +104,7 @@ BitBuffer.prototype = {
             r[k] = this.arr[this.writeIndex(i)];
             if (k === this.nCol2 - 1) {
                 r.fill(0, this.nCol2);
-                p_mod2(r, division);
+                p_mod(r, division);
                 for (let j = 0; j < this.nColEC; ++j) {
                     this.arr[this.writeIndex(ecIdx++)] = r[this.nCol2 + j];
                     this.bitIdx += 8;

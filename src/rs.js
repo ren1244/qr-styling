@@ -55,19 +55,7 @@ const get_division = (() => {
     }
 })();
 
-function p_mod(a, b) {
-    let r = new Uint8Array(a);
-    for (let i = 0; i <= a.length - b.length; ++i) {
-        let t = gf_mul(r[i], gf_inv(b[0]));
-        for (let k = 0; k < b.length; ++k) {
-            // r[i-k] = r[i-k] - b[b.length - 1 - k] * t;
-            r[i + k] = gf_add(r[i + k], gf_mul(b[k], t));
-        }
-    }
-    return r.subarray(r.length - b.length + 1);
-}
-
-function p_mod2(r, b) {
+function p_mod(r, b) {
     let n = r.length - b.length;
     for (let i = 0; i <= n; ++i) {
         let t = gf_mul(r[i], gf_inv(b[0]));
@@ -78,11 +66,4 @@ function p_mod2(r, b) {
     }
 }
 
-function rs(msg, ecBytes) {
-    let division = get_division(ecBytes);
-    let tmp = new Uint8Array(msg.length + ecBytes);
-    tmp.set(msg, 0);
-    return p_mod(tmp, division);
-}
-
-export { rs, get_division, p_mod2 };
+export { get_division, p_mod };
