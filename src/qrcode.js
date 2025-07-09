@@ -1,10 +1,11 @@
 import NumericMode from './mode/numeric.js';
 import ByteMode from './mode/byte.js';
 import AlphanumericMode from './mode/alphanumeric.js';
+import KanjiMode from './mode/kanji.js';
 import BitBuffer from './bit-buffer.js';
 import ArrayCanvas from './canvas/array-canvas.js';
 
-const modes = [NumericMode, AlphanumericMode, ByteMode];
+const modes = [NumericMode, AlphanumericMode, KanjiMode, ByteMode];
 
 const dict = {
     "L": [
