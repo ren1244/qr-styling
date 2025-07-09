@@ -1,9 +1,7 @@
 import NumericMode from './mode/numeric.js';
 import ByteMode from './mode/byte.js';
 import AlphanumericMode from './mode/alphanumeric.js';
-import Binary from './binary.js';
-import { rs } from './rs.js';
-import { groupIterator } from './utils.js';
+import BitBuffer from './bit-buffer.js';
 import ArrayCanvas from './canvas/array-canvas.js';
 
 const modes = [NumericMode, AlphanumericMode, ByteMode];
@@ -281,9 +279,19 @@ function QrCode(data, errorCorrection, version) {
     this.group = group;
     this.nRows = group[0] + (group[2] !== undefined ? group[2] : 0);
     this.remainBits = getRemainderBits(this.version);
-    this.bitSize = (dataLen + ecLen * this.nRows) * 8 + this.remainBits;
-    this.byteSize = this.bitSize + 7 >>> 3;
-    this.binary = new Binary(this.byteSize);
+    this.buffer = new BitBuffer(
+        group[0],
+        group[1],
+        group[2] || 0,
+        group[3] || 0,
+        ecLen,
+        this.remainBits
+    );
+    this.mode.write(this.buffer);
+    this.buffer.terminator();
+    this.buffer.padding();
+    this.buffer.errorCorrection();
+    this.buffer.remainderBits();
 }
 
 /**
@@ -335,79 +343,6 @@ QrCode.prototype.autoSelectVersion = function () {
         }
     }
     throw '無法找到合適的版本';
-}
-
-/**
- * data code word 加入 padding（0000 與 0xec11）
- */
-QrCode.prototype.padding = function () {
-    const dataBits = this.dataLen * 8;
-    // 補 0000
-    let n = dataBits - this.binary.getLength();
-    this.binary.write(0, n < 4 ? n : 4);
-
-    // 補 0 到整個 byte
-    n = 8 - (this.binary.getLength() & 7) & 7;
-    this.binary.write(0, n);
-
-    // 補 0xec11
-    n = this.dataLen - (this.binary.getLength() >>> 3);
-    for (let i = 0; i < n; ++i) {
-        this.binary.write(((i & 1) ? 0x11 : 0xec), 8);
-    }
-}
-
-/**
- * 加入 error correction 資料（依據群組）
- */
-QrCode.prototype.writeErrorCorrection = function () {
-    let pos = 0;
-    for (let i = 1; i < this.group.length; i += 2) {
-        let nBlocks = this.group[i - 1];
-        let nWords = this.group[i];
-        for (let j = 0; j < nBlocks; ++j) {
-            // 讀取 [pos, pos + nWords) 的資料，寫入
-            let msg = new Uint8Array(nWords);
-            for (let k = 0; k < nWords; ++k) {
-                msg[k] = this.binary.uint8(pos++);
-            }
-            let ec = rs(msg, this.ecLen);
-            for (let k = 0; k < this.ecLen; ++k) {
-                this.binary.write(ec[k], 8);
-            }
-        }
-    }
-}
-
-/**
- * 依據群組重新排列
- */
-QrCode.prototype.rerange = function () {
-    let newBinary = new Binary(this.byteSize);
-
-    // 寫入 data code words
-    let it = groupIterator(this.group);
-    for (let pos of it) {
-        newBinary.write(this.binary.uint8(pos), 8);
-    }
-
-    // 寫入 ec code words
-    it = groupIterator([this.nRows, this.ecLen]);
-    for (let pos of it) {
-        newBinary.write(this.binary.uint8(pos + this.dataLen), 8);
-    }
-
-    if (this.remainBits > 0) {
-        newBinary.write(0, this.remainBits);
-    }
-    this.binary = newBinary;
-}
-
-QrCode.prototype.end = function () {
-    this.mode.write(this.binary);
-    this.padding();
-    this.writeErrorCorrection();
-    this.rerange();
 }
 
 QrCode.prototype.render = function (canvas) {
@@ -506,7 +441,7 @@ QrCode.prototype.render = function (canvas) {
         let six = (size - 1) * size - size * 6;
         let i = 0;
         let k = 0;
-        let v = this.binary.bit(k);
+        let v = this.buffer.getBit(k);
         let s2 = size * 2;
         while (v !== null) {
             let j = (i - i % s2) / s2;
@@ -523,7 +458,7 @@ QrCode.prototype.render = function (canvas) {
             if (arrCanvas.getPoint(r, c, mask) === null) {
                 //console.log(r, c, v);
                 arrCanvas.setPoint(r, c, v ^ maskFunction(r, c), mask);
-                v = this.binary.bit(++k);
+                v = this.buffer.getBit(++k);
             }
             ++i;
         }

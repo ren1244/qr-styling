@@ -1,4 +1,4 @@
-import Binary from "../binary.js";
+import BitBuffer from "../bit-buffer.js";
 
 const codeMap = (() => {
     let s = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
@@ -49,24 +49,24 @@ AlphanumericMode.prototype.getLength = function () {
 
 /**
  * 寫入到 Binary 物件
- * @param {Binary} bin
+ * @param {BitBuffer} bin
  */
 AlphanumericMode.prototype.write = function (bin) {
     // mode indicator
-    bin.write(2, 4);
+    bin.appendBits(2, 4);
 
     // character count indicator
-    bin.write(this.data.length, this.countIndicatorLength);
+    bin.appendBits(this.data.length, this.countIndicatorLength);
 
     // value
     let str = this.data;
     for (let i = 1; i < str.length; i += 2) {
         let x = codeMap.get(str.codePointAt(i - 1)) * 45 + codeMap.get(str.codePointAt(i));
-        bin.write(x, 11);
+        bin.appendBits(x, 11);
     }
     if(str.length & 1) {
         let x = codeMap.get(str.codePointAt(str.length - 1));
-        bin.write(x, 6);
+        bin.appendBits(x, 6);
     }
 }
 

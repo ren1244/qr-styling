@@ -1,4 +1,4 @@
-import Binary from "../binary.js";
+import BitBuffer from "../bit-buffer.js";
 
 function ByteMode(data, version) {
     this.data = new TextEncoder().encode(data);
@@ -34,18 +34,18 @@ ByteMode.prototype.getLength = function() {
 
 /**
  * 寫入到 Binary 物件
- * @param {Binary} bin
+ * @param {BitBuffer} bin
  */
 ByteMode.prototype.write = function(bin) {
     // mode indicator
-    bin.write(4, 4);
+    bin.appendBits(4, 4);
 
     // character count indicator
-    bin.write(this.data.length, this.countIndicatorLength);
+    bin.appendBits(this.data.length, this.countIndicatorLength);
 
     // value
     for (let i = 0; i < this.data.length; ++i) {
-        bin.write(this.data[i], 8);
+        bin.appendBits(this.data[i], 8);
     }
 }
 

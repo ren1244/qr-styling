@@ -1,4 +1,4 @@
-import Binary from "../binary.js";
+import BitBuffer from "../bit-buffer.js";
 
 function NumericMode(data, version) {
     this.data = data;
@@ -40,14 +40,14 @@ NumericMode.prototype.getLength = function() {
 
 /**
  * 寫入到 Binary 物件
- * @param {Binary} bin
+ * @param {BitBuffer} bin
  */
 NumericMode.prototype.write = function(bin) {
     // mode indicator
-    bin.write(1, 4);
+    bin.appendBits(1, 4);
 
     // character count indicator
-    bin.write(this.data.length, this.countIndicatorLength);
+    bin.appendBits(this.data.length, this.countIndicatorLength);
 
     // value
     let str = this.data;
@@ -56,16 +56,16 @@ NumericMode.prototype.write = function(bin) {
         let k = str.codePointAt(i) - 48;
         x = x * 10 + k;
         if (i % 3 === 2) {
-            bin.write(x, 10);
+            bin.appendBits(x, 10);
             x = 0;
         }
     }
     switch (str.length % 3) {
         case 1:
-            bin.write(x, 4);
+            bin.appendBits(x, 4);
             break;
         case 2:
-            bin.write(x, 7);
+            bin.appendBits(x, 7);
             break;
     }
 }
