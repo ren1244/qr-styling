@@ -38,36 +38,47 @@ AlphanumericMode.getCharCountIndicatorLength = function (version) {
     return version < 10 ? 9 : (version < 27 ? 11 : 13);
 }
 
-/** 
- * 取得此寫入資料需要幾位元
- * @returns {number}
- */
-AlphanumericMode.prototype.getLength = function () {
-    let len = this.data.length;
-    return 4 + this.countIndicatorLength + (len >>> 1) * 11 + (len & 1) * 6;
-}
+AlphanumericMode.prototype = {
 
-/**
- * 寫入到 Binary 物件
- * @param {BitBuffer} bin
- */
-AlphanumericMode.prototype.write = function (bin) {
-    // mode indicator
-    bin.appendBits(2, 4);
+    /** 
+     * 取得此寫入資料需要幾位元
+     * @returns {number}
+     */
+    getLength () {
+        let len = this.data.length;
+        return 4 + this.countIndicatorLength + (len >>> 1) * 11 + (len & 1) * 6;
+    },
+    
+    /**
+     * 寫入到 Binary 物件
+     * @param {BitBuffer} bin
+     */
+    write (bin) {
+        // mode indicator
+        bin.appendBits(2, 4);
+    
+        // character count indicator
+        bin.appendBits(this.data.length, this.countIndicatorLength);
+    
+        // value
+        let str = this.data;
+        for (let i = 1; i < str.length; i += 2) {
+            let x = codeMap.get(str.codePointAt(i - 1)) * 45 + codeMap.get(str.codePointAt(i));
+            bin.appendBits(x, 11);
+        }
+        if(str.length & 1) {
+            let x = codeMap.get(str.codePointAt(str.length - 1));
+            bin.appendBits(x, 6);
+        }
+    },
 
-    // character count indicator
-    bin.appendBits(this.data.length, this.countIndicatorLength);
-
-    // value
-    let str = this.data;
-    for (let i = 1; i < str.length; i += 2) {
-        let x = codeMap.get(str.codePointAt(i - 1)) * 45 + codeMap.get(str.codePointAt(i));
-        bin.appendBits(x, 11);
-    }
-    if(str.length & 1) {
-        let x = codeMap.get(str.codePointAt(str.length - 1));
-        bin.appendBits(x, 6);
-    }
-}
+    /**
+     * 取得此 Mode 名稱
+     * @returns {string}
+     */
+    getName() {
+        return 'Alphanumeric';
+    },
+};
 
 export default AlphanumericMode;

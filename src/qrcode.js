@@ -3,7 +3,7 @@ import ByteMode from './mode/byte.js';
 import AlphanumericMode from './mode/alphanumeric.js';
 import KanjiMode from './mode/kanji.js';
 import BitBuffer from './bit-buffer.js';
-import ArrayCanvas from './canvas/array-canvas.js';
+import Matrix from './matrix.js';
 
 const modes = [NumericMode, AlphanumericMode, KanjiMode, ByteMode];
 
@@ -287,189 +287,199 @@ function QrCode(data, errorCorrection, version) {
     this.buffer.padding();
     this.buffer.errorCorrection();
     this.buffer.remainderBits();
+    this.matrix = this.buildMatrix();
 }
 
-/**
- * 取得某版本下，能產生最短長度的 mode 實例
- * @param {number} version 版本
- * @returns {NumericMode|AlphanumericMode|ByteMode|KanjiMode|null}
- */
-QrCode.prototype.minLenMode = function (version) {
-    let minLen = null;
-    let minInst = null;
-    for (let i = 0; i < modes.length; ++i) {
-        let inst = modes[i].create(this.data, version);
-        if (inst !== null) {
-            let len = inst.getLength();
-            if (minInst) {
-                if (len < minLen) {
+QrCode.prototype = {
+
+    /**
+     * 取得某版本下，能產生最短長度的 mode 實例
+     * @param {number} version 版本
+     * @returns {NumericMode|AlphanumericMode|ByteMode|KanjiMode|null}
+     */
+    minLenMode(version) {
+        let minLen = null;
+        let minInst = null;
+        for (let i = 0; i < modes.length; ++i) {
+            let inst = modes[i].create(this.data, version);
+            if (inst !== null) {
+                let len = inst.getLength();
+                if (minInst) {
+                    if (len < minLen) {
+                        minLen = len;
+                        minInst = inst;
+                    }
+                } else {
                     minLen = len;
                     minInst = inst;
                 }
-            } else {
-                minLen = len;
-                minInst = inst;
             }
         }
-    }
-    return minInst;
-}
+        return minInst;
+    },
 
-/**
- * 驗證某版本是否可使用
- * @param {number} version 版本
- * @returns {boolean}
- */
-QrCode.prototype.validVersion = function (version) {
-    let mode = this.minLenMode(version);
-    let info = dict[this.errorCorrection][version];
-    let size = info[2] * info[1];
-    if (info.length >= 5) {
-        size += info[4] * info[3];
-    }
-    return mode !== null && mode.getLength() <= size * 8;
-}
-
-/**
- * 自動選擇最低版本
- * @returns {number}
- */
-QrCode.prototype.autoSelectVersion = function () {
-    for (let version = 1; version <= 40; ++version) {
-        if (this.validVersion(version)) {
-            return version;
+    /**
+     * 驗證某版本是否可使用
+     * @param {number} version 版本
+     * @returns {boolean}
+     */
+    validVersion(version) {
+        let mode = this.minLenMode(version);
+        let info = dict[this.errorCorrection][version];
+        let size = info[2] * info[1];
+        if (info.length >= 5) {
+            size += info[4] * info[3];
         }
-    }
-    throw '無法找到合適的版本';
-}
+        return mode !== null && mode.getLength() <= size * 8;
+    },
 
-QrCode.prototype.render = function (canvas) {
-    let arrCanvas = new ArrayCanvas();
-    let size = 21 + 4 * (this.version - 1);
-    arrCanvas.setSize(size);
-
-    // 定位圖案與分隔圖案
-    // 中心位於: (3,3), (3,size-4), (size-4, 3)
-    const centerPoings = [{ r: 3, c: 3 }, { r: 3, c: size - 4 }, { r: size - 4, c: 3 }];
-    centerPoings.forEach(p => {
-        for (let r = p.r - 4; r <= p.r + 4; ++r) {
-            for (let c = p.c - 4; c <= p.c + 4; ++c) {
-                if (r < 0 || c < 0 || r >= size || c >= size) {
-                    continue;
-                }
-                let distance = Math.max(Math.abs(p.r - r), Math.abs(p.c - c));
-                let val = distance === 2 || distance === 4 ? 0 : 1;
-                arrCanvas.setPoint(r, c, val);
+    /**
+     * 自動選擇最低版本
+     * @returns {number}
+     */
+    autoSelectVersion() {
+        for (let version = 1; version <= 40; ++version) {
+            if (this.validVersion(version)) {
+                return version;
             }
         }
-    });
+        throw '無法找到合適的版本';
+    },
 
-    // 黑色碼元
-    arrCanvas.setPoint(4 * this.version + 9, 8, 1);
+    /**
+     * 把 qr code 「畫」到 Matrix 物件
+     * （8 種遮罩都畫上去）
+     * @returns {Matrix}
+     */
+    buildMatrix() {
+        let size = this.getSize();
+        let mtx = new Matrix(size);
 
-    // 定時圖案
-    for (let i = 8; i < size - 8; ++i) {
-        arrCanvas.setPoint(6, i, i & 1 ^ 1);
-        arrCanvas.setPoint(i, 6, i & 1 ^ 1);
-    }
-
-    // 對齊圖案
-    let align = alignPatPos[this.version];
-    if (align !== null) {
-        align.forEach(r => {
-            align.forEach(c => {
-                let i;
-                for (i = centerPoings.length - 1; i >= 0; --i) {
-                    let p = centerPoings[i];
-                    let distance = Math.max(Math.abs(p.r - r), Math.abs(p.c - c));
-                    if (distance < 7) {
-                        break;
+        // 定位圖案與分隔圖案
+        // 中心位於: (3,3), (3,size-4), (size-4, 3)
+        const centerPoings = [{ r: 3, c: 3 }, { r: 3, c: size - 4 }, { r: size - 4, c: 3 }];
+        centerPoings.forEach(p => {
+            for (let r = p.r - 4; r <= p.r + 4; ++r) {
+                for (let c = p.c - 4; c <= p.c + 4; ++c) {
+                    if (r < 0 || c < 0 || r >= size || c >= size) {
+                        continue;
                     }
+                    let distance = Math.max(Math.abs(p.r - r), Math.abs(p.c - c));
+                    let val = distance === 2 || distance === 4 ? 0 : 1;
+                    mtx.setPoint(r, c, val);
                 }
-                if (i < 0) {
-                    for (let dr = -2; dr <= 2; ++dr) {
-                        for (let dc = -2; dc <= 2; ++dc) {
-                            let distance = Math.max(Math.abs(dr), Math.abs(dc));
-                            let val = distance === 1 ? 0 : 1;
-                            arrCanvas.setPoint(r + dr, c + dc, val);
+            }
+        });
+
+        // 黑色碼元
+        mtx.setPoint(4 * this.version + 9, 8, 1);
+
+        // 定時圖案
+        for (let i = 8; i < size - 8; ++i) {
+            mtx.setPoint(6, i, i & 1 ^ 1);
+            mtx.setPoint(i, 6, i & 1 ^ 1);
+        }
+
+        // 對齊圖案
+        let align = alignPatPos[this.version];
+        if (align !== null) {
+            align.forEach(r => {
+                align.forEach(c => {
+                    let i;
+                    for (i = centerPoings.length - 1; i >= 0; --i) {
+                        let p = centerPoings[i];
+                        let distance = Math.max(Math.abs(p.r - r), Math.abs(p.c - c));
+                        if (distance < 7) {
+                            break;
                         }
                     }
-                }
+                    if (i < 0) {
+                        for (let dr = -2; dr <= 2; ++dr) {
+                            for (let dc = -2; dc <= 2; ++dc) {
+                                let distance = Math.max(Math.abs(dr), Math.abs(dc));
+                                let val = distance === 1 ? 0 : 1;
+                                mtx.setPoint(r + dr, c + dc, val);
+                            }
+                        }
+                    }
+                });
             });
-        });
-    }
-
-    // 版本資訊
-    let ver = versionPat[this.version];
-    if (ver !== null) {
-        let c0 = size - 11;
-        let r0 = 0;
-        let c1 = 0;
-        let r1 = size - 11;
-        for (let i = 0; i < 18; ++i) {
-            let val = ver >>> i & 1;
-            let dc = 2 - i % 3;
-            let dr = 5 - (i - i % 3) / 3;
-            arrCanvas.setPoint(r0 + dr, c0 + dc, val);
-            arrCanvas.setPoint(r1 + dc, c1 + dr, val);
-        }
-    }
-
-    // 以下根據不同 mask 版本會不同
-    let selectMaskVersion = null;
-    let minScore = null;
-    for (let mask = 0; mask < 8; ++mask) {
-        let maskFunction = formatFunc[mask];
-        let formatMask = ['M', 'L', 'H', 'Q'].indexOf(this.errorCorrection) << 3 | mask;
-        let fmtmsk = (formatMask << 10 | formatPat[formatMask]) ^ 21522;
-
-        // 格式資訊
-        for (let i = 0; i < 15; ++i) {
-            let r = i < 8 ? 8 : (i === 8 ? 7 : 14 - i);
-            let c = i < 6 ? i : (i === 6 ? 7 : 8);
-            let val = fmtmsk >>> 14 - i & 1;
-            arrCanvas.setPoint(r, c, val, mask);
-
-            r = i < 7 ? size - 1 - i : 8;
-            c = i < 7 ? 8 : size - 8 + i - 7;
-            arrCanvas.setPoint(r, c, val, mask);
         }
 
-        // 填入資料
-        let six = (size - 1) * size - size * 6;
-        let i = 0;
-        let k = 0;
-        let v = this.buffer.getBit(k);
-        let s2 = size * 2;
-        while (v !== null) {
-            let j = (i - i % s2) / s2;
-            let up = (j & 1) ? false : true;
-            let r = i % s2 >>> 1;
-            r = up ? size - 1 - r : r;
-            let c = size - 2 - j * 2;
-            if ((up && (i + 1 & 1)) || (!up && (i + 1 & 1))) {
-                ++c;
+        // 版本資訊
+        let ver = versionPat[this.version];
+        if (ver !== null) {
+            let c0 = size - 11;
+            let r0 = 0;
+            let c1 = 0;
+            let r1 = size - 11;
+            for (let i = 0; i < 18; ++i) {
+                let val = ver >>> i & 1;
+                let dc = 2 - i % 3;
+                let dr = 5 - (i - i % 3) / 3;
+                mtx.setPoint(r0 + dr, c0 + dc, val);
+                mtx.setPoint(r1 + dc, c1 + dr, val);
             }
-            if (i >= six) {
-                --c;
-            }
-            if (arrCanvas.getPoint(r, c, mask) === null) {
-                //console.log(r, c, v);
-                arrCanvas.setPoint(r, c, v ^ maskFunction(r, c), mask);
-                v = this.buffer.getBit(++k);
-            }
-            ++i;
         }
 
-        // 計算分數
-        let score = arrCanvas.score1(mask) + arrCanvas.score2(mask) + arrCanvas.score3(mask) + arrCanvas.score4(mask);
-        if (selectMaskVersion === null || minScore > score) {
-            minScore = score;
-            selectMaskVersion = mask;
+        // 以下根據不同 mask 版本會不同
+        for (let mask = 0; mask < 8; ++mask) {
+            let maskFunction = formatFunc[mask];
+            let formatMask = ['M', 'L', 'H', 'Q'].indexOf(this.errorCorrection) << 3 | mask;
+            let fmtmsk = (formatMask << 10 | formatPat[formatMask]) ^ 21522;
+
+            // 格式資訊
+            for (let i = 0; i < 15; ++i) {
+                let r = i < 8 ? 8 : (i === 8 ? 7 : 14 - i);
+                let c = i < 6 ? i : (i === 6 ? 7 : 8);
+                let val = fmtmsk >>> 14 - i & 1;
+                mtx.setPoint(r, c, val, mask);
+
+                r = i < 7 ? size - 1 - i : 8;
+                c = i < 7 ? 8 : size - 8 + i - 7;
+                mtx.setPoint(r, c, val, mask);
+            }
+
+            // 填入資料
+            let six = (size - 1) * size - size * 6;
+            let i = 0;
+            let k = 0;
+            let v = this.buffer.getBit(k);
+            let s2 = size * 2;
+            while (v !== null) {
+                let j = (i - i % s2) / s2;
+                let up = (j & 1) ? false : true;
+                let r = i % s2 >>> 1;
+                r = up ? size - 1 - r : r;
+                let c = size - 2 - j * 2;
+                if ((up && (i + 1 & 1)) || (!up && (i + 1 & 1))) {
+                    ++c;
+                }
+                if (i >= six) {
+                    --c;
+                }
+                if (mtx.getPoint(r, c, mask) === null) {
+                    //console.log(r, c, v);
+                    mtx.setPoint(r, c, v ^ maskFunction(r, c), mask);
+                    v = this.buffer.getBit(++k);
+                }
+                ++i;
+            }
         }
-    }
-    arrCanvas.dump(canvas, selectMaskVersion);
-    this.selectMaskVersion = selectMaskVersion;
+        return mtx;
+    },
+
+    getSize() {
+        return 21 + 4 * (this.version - 1);
+    },
+
+    getPoint(row, col) {
+        return this.matrix.getPoint(row, col, this.matrix.getBestMaskVersion());
+    },
+
+    getMaskVersion() {
+        return this.matrix.getBestMaskVersion();
+    },
 }
 
 export default QrCode;

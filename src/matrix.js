@@ -1,5 +1,3 @@
-import Canvas from "./interface.js";
-
 const P_TRUE = 3;
 const P_FALSE = 2;
 const P_FIXED_TRUE = 0xffff;
@@ -11,17 +9,13 @@ const P_MASK = 3;
  * @class
  * @implements {Canvas}
  */
-function ArrayCanvas() {
-    this.sz = null;
-    this.arr = null;
+function Matrix(size) {
+    this.sz = size;
+    this.arr = new Uint16Array(size * size);
+    this.best = null;
 }
 
-ArrayCanvas.prototype = {
-
-    setSize(size) {
-        this.sz = size;
-        this.arr = new Uint16Array(size * size);
-    },
+Matrix.prototype = {
 
     setPoint(row, col, val, maskVersion) {
         if (maskVersion === undefined) {
@@ -42,33 +36,38 @@ ArrayCanvas.prototype = {
         }
     },
 
-    dump(canvas, maskVersion) {
-        canvas.setSize(this.sz);
-        for (let r = 0; r < this.sz; ++r) {
-            for (let c = 0; c < this.sz; ++c) {
-                let val = this.getPoint(r, c, maskVersion);
-                if (val !== null) {
-                    canvas.setPoint(r, c, val);
+    getBestMaskVersion() {
+        if (this.best === null) {
+            let selectMaskVersion = null;
+            let minScore = null;
+            for (let i = 0; i < 8; ++i) {
+                // 計算分數
+                let score = this.score1(i) + this.score2(i) + this.score3(i) + this.score4(i);
+                if (selectMaskVersion === null || minScore > score) {
+                    minScore = score;
+                    selectMaskVersion = i;
                 }
             }
+            this.best = selectMaskVersion;
         }
+        return this.best;
     },
 
     score1(maskVersion) {
         let score = 0;
         for (let i = 0; i < this.sz; ++i) {
             let arr = [
-                {val: null, count: null, cur: null},
-                {val: null, count: null, cur: null}
+                { val: null, count: null, cur: null },
+                { val: null, count: null, cur: null }
             ];
             for (let j = 0; j < this.sz; ++j) {
                 arr[0].cur = this.getPoint(i, j, maskVersion);
                 arr[1].cur = this.getPoint(j, i, maskVersion);
                 arr.forEach(o => {
-                    if(o.val === o.cur) {
+                    if (o.val === o.cur) {
                         ++o.count;
                     } else {
-                        if(o.count > 4) {
+                        if (o.count > 4) {
                             score += o.count - 2;
                         }
                         o.val = o.cur;
@@ -77,7 +76,7 @@ ArrayCanvas.prototype = {
                 });
             }
             arr.forEach(o => {
-                if(o.count > 4) {
+                if (o.count > 4) {
                     score += o.count - 2;
                 }
             });
@@ -145,4 +144,4 @@ ArrayCanvas.prototype = {
     }
 };
 
-export default ArrayCanvas;
+export default Matrix;

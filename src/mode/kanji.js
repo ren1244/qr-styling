@@ -54,35 +54,46 @@ KanjiMode.getCharCountIndicatorLength = function (version) {
     return version < 10 ? 8 : (version < 27 ? 10 : 12);
 }
 
-/** 
- * 取得此寫入資料需要幾位元
- * @returns {number}
- */
-KanjiMode.prototype.getLength = function () {
-    return 4 + this.countIndicatorLength + this.data.length * 13;
-}
+KanjiMode.prototype = {
 
-/**
- * 寫入到 Binary 物件
- * @param {BitBuffer} bin
- */
-KanjiMode.prototype.write = function (bin) {
-    // mode indicator
-    bin.appendBits(8, 4);
+    /** 
+     * 取得此寫入資料需要幾位元
+     * @returns {number}
+     */
+    getLength() {
+        return 4 + this.countIndicatorLength + this.data.length * 13;
+    },
 
-    // character count indicator
-    bin.appendBits(this.data.length, this.countIndicatorLength);
+    /**
+     * 寫入到 Binary 物件
+     * @param {BitBuffer} bin
+     */
+    write(bin) {
+        // mode indicator
+        bin.appendBits(8, 4);
 
-    // value
-    for (let i = 0; i < this.data.length; ++i) {
-        let x = this.data[i];
-        if (0xe040 <= x && x <= 0xebbf) {
-            x -= 0xc140;
-        } else {
-            x -= 0x8140;
+        // character count indicator
+        bin.appendBits(this.data.length, this.countIndicatorLength);
+
+        // value
+        for (let i = 0; i < this.data.length; ++i) {
+            let x = this.data[i];
+            if (0xe040 <= x && x <= 0xebbf) {
+                x -= 0xc140;
+            } else {
+                x -= 0x8140;
+            }
+            bin.appendBits((x >>> 8 & 0xff) * 192 + (x & 0xff), 13);
         }
-        bin.appendBits((x >>> 8 & 0xff) * 192 + (x & 0xff), 13);
-    }
-}
+    },
+
+    /**
+     * 取得此 Mode 名稱
+     * @returns {string}
+     */
+    getName() {
+        return 'Kanji';
+    },
+};
 
 export default KanjiMode;
