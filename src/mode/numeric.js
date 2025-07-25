@@ -20,12 +20,34 @@ NumericMode.create = function (data, version) {
 }
 
 /**
+ * 判斷某字是否能使用此模式
+ * @param {number} unicode
+ * @returns {boolean}
+ */
+NumericMode.hasUnicode = function (unicode) {
+    return 48 <= unicode && unicode <= 57;
+}
+
+/**
  * 取得在某版本時 character count indicator 所需要的位元數
  * @param {number} version 版本
  * @returns {number}
  */
 NumericMode.getCharCountIndicatorLength = function (version) {
     return version < 10 ? 10 : (version < 27 ? 12 : 14);
+}
+
+/**
+ * 計算長度
+ * @param {number} version 版本
+ * @param {number} count 共幾個
+ * @param {boolean} isConcat 是否接續前面（若為是，則不加 Indicator 長度）
+ * @returns {number} 總長度，單位為 bit
+ */
+NumericMode.getLength = function (version, count, isConcat) {
+    let r = count % 3;
+    let q = (count - r) / 3;
+    return q * 10 + (r ? (r === 1 ? 4 : 7) : 0) + (isConcat ? 0 : 4 + NumericMode.getCharCountIndicatorLength(version));
 }
 
 NumericMode.prototype = {

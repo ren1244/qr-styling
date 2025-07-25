@@ -30,12 +30,32 @@ AlphanumericMode.create = function (data, version) {
 }
 
 /**
+ * 判斷某字是否能使用此模式
+ * @param {number} unicode
+ * @returns {boolean}
+ */
+AlphanumericMode.hasUnicode = function(unicode) {
+    return codeMap.has(unicode);
+}
+
+/**
  * 取得在某版本時 character count indicator 所需要的位元數
  * @param {number} version 版本
  * @returns {number}
  */
 AlphanumericMode.getCharCountIndicatorLength = function (version) {
     return version < 10 ? 9 : (version < 27 ? 11 : 13);
+}
+
+/**
+ * 計算長度
+ * @param {number} version 版本
+ * @param {number} count 共幾個
+ * @param {boolean} isConcat 是否接續前面（若為是，則不加 Indicator 長度）
+ * @returns {number} 總長度，單位為 bit
+ */
+AlphanumericMode.getLength = function(version, count, isConcat) {
+    return (count >>> 1) * 11 + (count & 1) * 6 + (isConcat ? 0 : 4 + AlphanumericMode.getCharCountIndicatorLength(version));
 }
 
 AlphanumericMode.prototype = {
