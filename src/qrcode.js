@@ -4,6 +4,14 @@ import Matrix from './matrix.js';
 
 const modes = [MixedMode];
 
+/**
+ * 依「容錯等級」與「版本」取得其相關資訊，內容如下：
+ * [0] => EC Codewords Per Block
+ * [1] => Number of Blocks in Group 1
+ * [2] => Number of Data Codewords in Each of Group 1's Blocks
+ * [3] => Number of Blocks in Group 2
+ * [4] => Number of Data Codewords in Each of Group 2's Blocks
+ */
 const dict = {
     "L": [
         null,
@@ -179,6 +187,10 @@ const dict = {
     ]
 };
 
+/**
+ * 對齊圖案中心點的座標
+ * 座標系統以左上角為 (row = 0, col = 0)，row 向下遞增，col 向右遞增
+ */
 const alignPatPos = [
     null,
     null,
@@ -223,7 +235,13 @@ const alignPatPos = [
     [6, 30, 58, 86, 114, 142, 170],
 ];
 
-// key 為 ecLevel << 3 | mask, value 為格式資訊，需再 xor 21522
+/**
+ * 格式資訊
+ * index = ecLevel << 3 | mask
+ * ecLevel 為 2 bit 的數值：01b(L), 00b(M), 11b(Q), 10b(H)
+ * mask 為 3 bit 的數值，最小為 0 最大為 7
+ * 取得的 value 需再 xor 21522，bit 0 ~ bit 14 即為需要填入的黑白色塊
+ */
 const formatPat = [0, 311, 622, 857, 491, 220, 901, 690, 982, 737, 440, 143, 573, 778, 83, 356, 667, 940, 245, 450, 880, 583, 286, 41, 333, 122, 803, 532, 166, 401, 712, 1023];
 const formatFunc = [
     (r, c) => ((r + c) % 2 === 0),
@@ -236,7 +254,11 @@ const formatFunc = [
     (r, c) => (((r * c) % 3 + r + c) % 2 === 0),
 ]
 
-// 版本 7 以上要填入版本資訊
+/**
+ * 版本資訊
+ * index = 版本
+ * value 的 bit 0 ~ bit 17 即為需要填入的黑白色塊
+ */
 const versionPat = [null, null, null, null, null, null, null, 42232, 63108, 157028, 208020, 114548, 72588, 231532, 180636, 21116, 31554, 190626, 237906, 78514, 104010, 198058, 150618, 57274, 36294, 138790, 219094, 115766, 90318, 258862, 178910, 10558, 175681, 15777, 95313, 255921, 213833, 118953, 39257, 133817, 153797];
 
 function getRemainderBits(version) {
