@@ -13,42 +13,15 @@ const externalArray = Object.keys(pkg.dependencies || {});
 
 export default [
     {
-        input: 'src/core/qrcode.js',
+        input: 'src/index.js',
         external: externalArray,
         output: {
-            file: 'build/qrcode.cjs',
-            format: 'cjs'
+            file: 'build/index.cjs',
+            format: 'cjs',
         },
         plugins: [
             nodeResolve(),
             commonjs()
-        ]
-    },
-    {
-        input: 'src/core/qrcode.js',
-        output: {
-            file: 'build/browser.esm.js',
-            format: 'es',
-            sourcemap: true,
-        },
-        plugins: [
-            nodeResolve(),
-            commonjs(),
-            terser(),
-        ]
-    },
-    {
-        input: 'src/core/qrcode.js',
-        output: {
-            file: 'build/browser.umd.js',
-            format: 'umd',
-            sourcemap: true,
-            name: 'qrcode',
-        },
-        plugins: [
-            nodeResolve(),
-            commonjs(),
-            terser(),
         ]
     }
 ];

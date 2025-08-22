@@ -1,19 +1,23 @@
 {
-  "type": "module",
+  "name": "@ren1244/qr-styling",
+  "version": "1.0.0",
+  "description": "A framework for styling QR Codes",
   "exports": {
-    "import": "./src/core/qrcode.js",
-    "require": "./build/qrcode.cjs"
+    "import": "./src/index.js",
+    "require": "./build/index.cjs"
   },
+  "type": "module",
   "scripts": {
     "build": "rollup -c"
   },
+  "author": "ren1244 <n1244506804@hotmail.com>",
+  "license": "MIT",
   "dependencies": {
-    "dijkstrajs": "^1.0.3"
+    "@ren1244/qr-path": "^2.0.1"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.1",
-    "@rollup/plugin-terser": "^0.4.4",
-    "rollup": "^4.48.0"
+    "rollup": "^4.46.4"
   }
 }
