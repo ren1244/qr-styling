@@ -282,15 +282,16 @@ function QrCode(data, errorCorrection, version) {
     this.data = data;
     this.errorCorrection = errorCorrection || 'M';
 
+    let minModeAndVersion = this.autoSelectVersion();
+    this.mode = minModeAndVersion['mode'];
     if (version) {
-        if (!this.validVersion(version)) {
+        if (version < minModeAndVersion['version']) {
             throw `版本 ${version} 容量不夠`;
         }
         this.version = version;
     } else {
-        this.version = this.autoSelectVersion();
+        this.version = minModeAndVersion['version'];
     }
-    this.mode = this.minLenMode(this.version);
 
     let blockInfo = dict[this.errorCorrection][this.version];
     this.buffer = new BitBuffer(
@@ -340,10 +341,10 @@ QrCode.prototype = {
     /**
      * 驗證某版本是否可使用
      * @param {number} version 版本
+     * @param {NumericMode|AlphanumericMode|ByteMode|KanjiMode} mode mode 實例
      * @returns {boolean}
      */
-    validVersion(version) {
-        let mode = this.minLenMode(version);
+    validVersion(version, mode) {
         let info = dict[this.errorCorrection][version];
         let size = info[2] * info[1];
         if (info.length >= 5) {
@@ -354,13 +355,37 @@ QrCode.prototype = {
 
     /**
      * 自動選擇最低版本
-     * @returns {number}
+     * @returns {{version: number, mode: NumericMode|AlphanumericMode|ByteMode|KanjiMode}}
      */
     autoSelectVersion() {
-        for (let version = 1; version <= 40; ++version) {
-            if (this.validVersion(version)) {
-                return version;
+        // version 1 ~ 9, 10 ~ 26, 27 ~ 40 每段算出來的長度都是相同的
+        let testVersion = [[1, 9], [10, 26], [27, 40]];
+        let mode = null;
+        for (let versionSegment of testVersion) {
+            mode = this.minLenMode(versionSegment[1]);
+            if (mode === null) {
+                throw '無法找到合適的Mode';
             }
+            // 二分搜尋法找最低版本
+            let [minVer, maxVer] = versionSegment;
+            // let version in (minVer, maxVer]
+            if (!this.validVersion(maxVer, mode)) {
+                continue;
+            }
+            if (this.validVersion(minVer, mode)) {
+                return { version: minVer, mode };
+            }
+            console.log(minVer, maxVer);
+            while (minVer + 1 < maxVer) {
+                let v = (minVer + maxVer) >>> 1;
+                if (this.validVersion(v, mode)) {
+                    maxVer = v;
+                } else {
+                    minVer = v;
+                }
+                console.log(minVer, maxVer);
+            }
+            return { version: maxVer, mode };
         }
         throw '無法找到合適的版本';
     },

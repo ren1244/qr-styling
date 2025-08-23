@@ -1,5 +1,3 @@
-import ArrayCanvas from "./array-canvas.js";
-
 const xmlns = 'http://www.w3.org/2000/svg';
 
 function SvgCanvas(parentElement, size, border) {
