@@ -375,7 +375,6 @@ QrCode.prototype = {
             if (this.validVersion(minVer, mode)) {
                 return { version: minVer, mode };
             }
-            console.log(minVer, maxVer);
             while (minVer + 1 < maxVer) {
                 let v = (minVer + maxVer) >>> 1;
                 if (this.validVersion(v, mode)) {
@@ -383,7 +382,6 @@ QrCode.prototype = {
                 } else {
                     minVer = v;
                 }
-                console.log(minVer, maxVer);
             }
             return { version: maxVer, mode };
         }
@@ -503,7 +501,6 @@ QrCode.prototype = {
                     --c;
                 }
                 if (mtx.getPoint(r, c, mask) === null) {
-                    //console.log(r, c, v);
                     mtx.setPoint(r, c, v ^ maskFunction(r, c), mask);
                     v = this.buffer.getBit(++k);
                 }
