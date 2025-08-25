@@ -1,7 +1,7 @@
 {
   "type": "module",
   "exports": {
-    "import": "./build/qrcode.mjs",
+    "import": "./src/qrcode.js",
     "require": "./build/qrcode.cjs"
   },
   "scripts": {
