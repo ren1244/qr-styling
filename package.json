@@ -13,7 +13,8 @@
   "author": "ren1244 <n1244506804@hotmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@ren1244/qr-path": "^2.0.1"
+    "@ren1244/qr-path": "^2.0.1",
+    "dijkstrajs": "^1.0.3"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.6",
