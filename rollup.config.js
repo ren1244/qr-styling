@@ -13,7 +13,7 @@ const externalArray = Object.keys(pkg.dependencies || {});
 
 export default [
     {
-        input: 'src/qrcode.js',
+        input: 'src/core/qrcode.js',
         external: externalArray,
         output: {
             file: 'build/qrcode.cjs',
@@ -25,7 +25,7 @@ export default [
         ]
     },
     {
-        input: 'src/qrcode.js',
+        input: 'src/core/qrcode.js',
         output: {
             file: 'build/browser.esm.js',
             format: 'es',
@@ -38,7 +38,7 @@ export default [
         ]
     },
     {
-        input: 'src/qrcode.js',
+        input: 'src/core/qrcode.js',
         output: {
             file: 'build/browser.umd.js',
             format: 'umd',
