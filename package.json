@@ -5,8 +5,7 @@
     "require": "./build/qrcode.cjs"
   },
   "scripts": {
-    "build": "rollup -c",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js test"
+    "build": "rollup -c"
   },
   "dependencies": {
     "dijkstrajs": "^1.0.3"
@@ -15,7 +14,6 @@
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
-    "jest": "^30.0.3",
     "rollup": "^4.48.0"
   }
 }
