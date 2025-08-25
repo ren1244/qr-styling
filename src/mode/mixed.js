@@ -32,7 +32,7 @@ function MixedMode(data, version) {
 MixedMode.create = function (data, version) {
     const graph = getGraph(data);
     const bestPath = graph.getBestPath(version).map(o => {
-        return new o.mode(o.str, version);
+        return o.mode.create(o.str, version);
     });
     return new MixedMode(bestPath, version);
 }
