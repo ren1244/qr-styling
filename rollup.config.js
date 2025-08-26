@@ -1,6 +1,7 @@
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
+import license from 'rollup-plugin-license';
 import { readFileSync } from "node:fs";
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,7 +35,22 @@ export default [
         plugins: [
             nodeResolve(),
             commonjs(),
-            terser()
+            terser(),
+            license({
+                sourcemap: true,
+                banner: {
+                    commentStyle: 'regular',
+                    content: `${pkg.name} v${pkg.version}
+This prebuilt ESM version for browsers includes third-party libraries.  
+See THIRD_PARTY_LICENSES.txt for details.`
+                },
+                thirdParty: {
+                    multipleVersions: true,
+                    output: {
+                        file: path.resolve(__dirname, './build/THIRD_PARTY_LICENSES.txt'),
+                    }
+                }
+            })
         ]
     }
 ];
