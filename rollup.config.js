@@ -21,7 +21,21 @@ export default [
         },
         plugins: [
             nodeResolve(),
-            commonjs()
+            commonjs(),
+        ]
+    },
+    {
+        input: 'src/index.js',
+        output: {
+            file: 'build/browser.esm.js',
+            format: 'es',
+            sourcemap: true,
+        },
+        plugins: [
+            nodeResolve(),
+            commonjs(),
+            terser()
         ]
     }
 ];
+

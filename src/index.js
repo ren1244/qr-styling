@@ -16,4 +16,4 @@ class QrCode extends QrBase {
     }
 }
 
-export { QrCode, QrBase, StylingBase };
+export { QrCode, QrBase, StylingBase, QrCore };
