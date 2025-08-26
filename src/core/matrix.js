@@ -42,7 +42,6 @@ Matrix.prototype = {
             let minScore = null;
             const { arr, sz } = this;
             for (let maskVersion = 0; maskVersion < 8; ++maskVersion) {
-                let t = Date.now();
                 const offset = P_OFFSET[maskVersion];
                 // 計算分數
                 let score1 = 0;
@@ -112,25 +111,6 @@ Matrix.prototype = {
                     }
                 }
                 score4 = (Math.abs(count4 * 20 - 10 * sz * sz) / (sz * sz) | 0) * 10;
-                let t2 = Date.now();
-                let oldScore1 = this.score1(maskVersion);
-                let oldScore2 = this.score2(maskVersion);
-                let oldScore3 = this.score3(maskVersion);
-                let oldScore4 = this.score4(maskVersion);
-                let t3 = Date.now();
-                console.log(t2 - t, t3 - t2);
-                if(score1 !== oldScore1) {
-                    throw `score1: ${score1} !== ${oldScore1}`;
-                }
-                if(score2 !== oldScore2) {
-                    throw `score2: ${score2} !== ${oldScore2}`;
-                }
-                if(score3 !== oldScore3) {
-                    throw `score3: ${score3} !== ${oldScore3}`;
-                }
-                if(score4 !== oldScore4) {
-                    throw `score4: ${score4} !== ${oldScore4}`;
-                }
                 const score = score1 + score2 + score3 + score4;
                 if (selectMaskVersion === null || minScore > score) {
                     minScore = score;
@@ -141,96 +121,6 @@ Matrix.prototype = {
         }
         return this.best;
     },
-
-    score1(maskVersion) {
-        let score = 0;
-        for (let i = 0; i < this.sz; ++i) {
-            let arr = [
-                { val: null, count: null, cur: null },
-                { val: null, count: null, cur: null }
-            ];
-            for (let j = 0; j < this.sz; ++j) {
-                arr[0].cur = this.getPoint(i, j, maskVersion);
-                arr[1].cur = this.getPoint(j, i, maskVersion);
-                arr.forEach(o => {
-                    if (o.val === o.cur) {
-                        ++o.count;
-                    } else {
-                        if (o.count > 4) {
-                            score += o.count - 2;
-                        }
-                        o.val = o.cur;
-                        o.count = 1;
-                    }
-                });
-            }
-            arr.forEach(o => {
-                if (o.count > 4) {
-                    score += o.count - 2;
-                }
-            });
-        }
-        return score;
-    },
-
-    score2(maskVersion) {
-        let score = 0;
-        for (let r = 0; r < this.sz - 1; ++r) {
-            for (let c = 0; c < this.sz - 1; ++c) {
-                let v = this.getPoint(r, c, maskVersion);
-                if (
-                    v === this.getPoint(r, c + 1, maskVersion) &&
-                    v === this.getPoint(r + 1, c + 1, maskVersion) &&
-                    v === this.getPoint(r + 1, c, maskVersion)
-                ) {
-                    score += 3;
-                }
-            }
-        }
-        return score;
-    },
-
-    score3(maskVersion) {
-        let score = 0;
-        let v0 = 93;   // 00001011101
-        let v1 = 1488; // 10111010000
-        for (let i = 0; i < this.sz; ++i) {
-            let j;
-            let v;
-            let t0 = 0;
-            let t1 = 0;
-            for (j = 0; j < 10; ++j) {
-                v = this.getPoint(i, j, maskVersion);
-                t0 = (t0 << 1 | v) & 0x7ff;
-                v = this.getPoint(j, i, maskVersion);
-                t1 = (t1 << 1 | v) & 0x7ff;
-            }
-            for (; j < this.sz; ++j) {
-                v = this.getPoint(i, j, maskVersion);
-                t0 = (t0 << 1 | v) & 0x7ff;
-                v = this.getPoint(j, i, maskVersion);
-                t1 = (t1 << 1 | v) & 0x7ff;
-                if (t0 === v0 || t0 === v1) {
-                    score += 40;
-                }
-                if (t1 === v0 || t1 === v1) {
-                    score += 40;
-                }
-            }
-        }
-        return score;
-    },
-
-    score4(maskVersion) {
-        let blackCount = 0;
-        let total = this.sz * this.sz;
-        for (let r = 0; r < this.sz; ++r) {
-            for (let c = 0; c < this.sz; ++c) {
-                blackCount += this.getPoint(r, c, maskVersion);
-            }
-        }
-        return (Math.abs(blackCount * 20 - 10 * total) / total | 0) * 10;
-    }
 };
 
 export default Matrix;
