@@ -243,16 +243,6 @@ const alignPatPos = [
  * 取得的 value 需再 xor 21522，bit 0 ~ bit 14 即為需要填入的黑白色塊
  */
 const formatPat = [0, 311, 622, 857, 491, 220, 901, 690, 982, 737, 440, 143, 573, 778, 83, 356, 667, 940, 245, 450, 880, 583, 286, 41, 333, 122, 803, 532, 166, 401, 712, 1023];
-const formatFunc = [
-    (r, c) => ((r + c) % 2 === 0 ? 1 : 0),
-    (r, c) => (r % 2 === 0 ? 1 : 0),
-    (r, c) => (c % 3 === 0 ? 1 : 0),
-    (r, c) => ((r + c) % 3 === 0 ? 1 : 0),
-    (r, c) => (((c - c % 3) / 3 + (r >>> 1)) % 2 === 0 ? 1 : 0),
-    (r, c) => ((r * c) % 2 + (r * c) % 3 === 0 ? 1 : 0),
-    (r, c) => (((r * c) % 3 + r * c) % 2 === 0 ? 1 : 0),
-    (r, c) => (((r * c) % 3 + r + c) % 2 === 0 ? 1 : 0),
-];
 
 /**
  * 版本資訊
@@ -466,7 +456,6 @@ QrCode.prototype = {
 
         // 以下根據不同 mask 版本會不同
         for (let mask = 0; mask < 8; ++mask) {
-            let maskFunction = formatFunc[mask];
             let formatMask = ['M', 'L', 'H', 'Q'].indexOf(this.errorCorrection) << 3 | mask;
             let fmtmsk = (formatMask << 10 | formatPat[formatMask]) ^ 21522;
 
@@ -483,28 +472,30 @@ QrCode.prototype = {
             }
 
             // 填入資料
-            let six = (size - 1) * size - size * 6;
-            let i = 0;
-            let k = 0;
-            let v = this.buffer.getBit(k);
-            let s2 = size * 2;
-            while (v !== null) {
-                let j = (i - i % s2) / s2;
-                let up = (j & 1) ? false : true;
-                let r = i % s2 >>> 1;
-                r = up ? size - 1 - r : r;
-                let c = size - 2 - j * 2;
-                if ((up && (i + 1 & 1)) || (!up && (i + 1 & 1))) {
-                    ++c;
+            if (mask === 0) {
+                let six = (size - 1) * size - size * 6;
+                let i = 0;
+                let k = 0;
+                let v = this.buffer.getBit(k);
+                let s2 = size * 2;
+                while (v !== null) {
+                    let j = (i - i % s2) / s2;
+                    let up = (j & 1) ? false : true;
+                    let r = i % s2 >>> 1;
+                    r = up ? size - 1 - r : r;
+                    let c = size - 2 - j * 2;
+                    if ((up && (i + 1 & 1)) || (!up && (i + 1 & 1))) {
+                        ++c;
+                    }
+                    if (i >= six) {
+                        --c;
+                    }
+                    if (mtx.getPoint(r, c, mask) === null) {
+                        mtx.setMaskPoint(r, c, v);
+                        v = this.buffer.getBit(++k);
+                    }
+                    ++i;
                 }
-                if (i >= six) {
-                    --c;
-                }
-                if (mtx.getPoint(r, c, mask) === null) {
-                    mtx.setPoint(r, c, v ^ maskFunction(r, c), mask);
-                    v = this.buffer.getBit(++k);
-                }
-                ++i;
             }
         }
         return mtx;

@@ -26,6 +26,18 @@ Matrix.prototype = {
         this.arr[row * this.sz + col] |= val;
     },
 
+    setMaskPoint(row, col, val) {
+        const mask = ((row + col) % 2 ? 0 : 1) |
+            (row % 2 ? 0 : 4) |
+            (col % 3 ? 0 : 16) |
+            ((row + col) % 3 ? 0 : 64) |
+            (((col - col % 3) / 3 + (row >>> 1)) % 2 ? 0 : 256) |
+            ((row * col) % 2 + (row * col) % 3 ? 0 : 1024) |
+            (((row * col) % 3 + row * col) % 2 ? 0 : 4096) |
+            (((row * col) % 3 + row + col) % 2 ? 0 : 16384);
+        this.arr[row * this.sz + col] = (val ? P_FIXED_TRUE : P_FIXED_FALSE) ^ mask;
+    },
+
     getPoint(row, col, maskVersion) {
         let val = this.arr[row * this.sz + col];
         if (maskVersion === undefined) {
