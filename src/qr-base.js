@@ -4,6 +4,7 @@ import Dots from './styling/dots.js';
 import Rounded from "./styling/rounded.js";
 import Square from "./styling/square.js";
 import SuperRound from "./styling/super-round.js";
+import StylingBase from "./styling/styling-base.js";
 
 class QrBase {
 
