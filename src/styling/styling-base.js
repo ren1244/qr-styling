@@ -35,10 +35,13 @@ class StylingBase {
         }).join(' ');
     }
 
-    toSvg(edge, padding) {
+    toSvg(edge, padding, quietFlag) {
         const cmds = this.getCommands();
         const size = this.size;
         const d = this.getD(cmds);
+        if(quietFlag) {
+            padding *= edge / (size + padding * 2);
+        }
         const innerEdge = edge - padding * 2;
         if (innerEdge < 0) {
             throw 'padding is too large';
