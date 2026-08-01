@@ -1,18 +1,20 @@
 import BitBuffer from "../bit-buffer.js";
 
-function ByteMode(data, version) {
+function ByteMode(data, version, enableEci) {
     this.data = new TextEncoder().encode(data);
     this.countIndicatorLength = ByteMode.getCharCountIndicatorLength(version);
+    this.enableEci = enableEci;
 }
 
 /**
  * 取得 Mode 物件
  * @param {string} data 
  * @param {number} version 版本
+ * @param {boolean} enableEci 是否開啟 eci
  * @returns {?ByteMode} 若為合理資料回傳 Mode 物件，否則回傳 null
  */
-ByteMode.create = function (data, version) {
-    return new ByteMode(data, version);
+ByteMode.create = function (data, version, enableEci) {
+    return new ByteMode(data, version, enableEci);
 }
 
 /**
@@ -52,7 +54,7 @@ ByteMode.prototype = {
      * @returns {number}
      */
     getLength() {
-        return 4 + this.countIndicatorLength + this.data.length * 8;
+        return (this.enableEci ? 12 : 0) + 4 + this.countIndicatorLength + this.data.length * 8;
     },
 
     /**
@@ -60,6 +62,11 @@ ByteMode.prototype = {
      * @param {BitBuffer} bin
      */
     write(bin) {
+        // eci 26
+        if(this.enableEci) {
+            bin.appendBits(0x71a, 12);
+        }
+
         // mode indicator
         bin.appendBits(4, 4);
 

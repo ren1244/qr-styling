@@ -27,9 +27,10 @@ function KanjiMode(data, version) {
  * 取得 Mode 物件
  * @param {string} data 
  * @param {number} version 版本
+ * @param {boolean} enableEci 是否開啟 eci
  * @returns {?KanjiMode} 若為合理資料回傳 Mode 物件，否則回傳 null
  */
-KanjiMode.create = function (data, version) {
+KanjiMode.create = function (data, version, enableEci) {
     let kanjiArray = [];
     for (let i = 0; i < data.length; ++i) {
         let u = data.codePointAt(i);

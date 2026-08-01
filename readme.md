@@ -137,7 +137,7 @@ qrcode.stringToBytes = (() => {
 
 // 使用第三方 QR Code 核心：繼承 QrBase 並覆寫 create 靜態方法
 class QrCode extends QrBase {
-    static create(data, errorCorrectionLevel, version) {
+    static create(data, errorCorrectionLevel, version, enableEci) {
         version = version || 0;
         if (['L', 'M', 'Q', 'H'].indexOf(errorCorrectionLevel) < 0) {
             errorCorrectionLevel = 'M';

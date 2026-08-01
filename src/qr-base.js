@@ -31,8 +31,8 @@ class QrBase {
         QrBase.stylings[styling] = stylingClass;
     }
 
-    constructor(data, errorCorrectionLevel, version) {
-        const qr = this.constructor.create(data, errorCorrectionLevel, version);
+    constructor(data, errorCorrectionLevel, version, enableEci) {
+        const qr = this.constructor.create(data, errorCorrectionLevel, version, enableEci);
         this.data = qr.data;
         this.size = qr.size;
     }

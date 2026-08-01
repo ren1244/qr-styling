@@ -9,9 +9,10 @@ function NumericMode(data, version) {
  * 取得 Mode 物件
  * @param {string} data 
  * @param {number} version 版本
+ * @param {boolean} enableEci 是否開啟 eci
  * @returns {?NumericMode} 若為合理資料回傳 Mode 物件，否則回傳 null
  */
-NumericMode.create = function (data, version) {
+NumericMode.create = function (data, version, enableEci) {
     if (data.search(/^\d+$/) > -1) {
         return new NumericMode(data, version);
     } else {

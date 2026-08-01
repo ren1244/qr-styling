@@ -19,9 +19,10 @@ function AlphanumericMode(data, version) {
  * 取得 Mode 物件
  * @param {string} data 
  * @param {number} version 版本
+ * @param {boolean} enableEci 是否開啟 eci
  * @returns {?AlphanumericMode} 若為合理資料回傳 Mode 物件，否則回傳 null
  */
-AlphanumericMode.create = function (data, version) {
+AlphanumericMode.create = function (data, version, enableEci) {
     if (data.search(/^[0-9A-Z \$\%\*\+\-\.\/\:]+$/) > -1) {
         return new AlphanumericMode(data, version);
     } else {
