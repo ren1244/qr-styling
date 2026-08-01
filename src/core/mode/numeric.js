@@ -9,9 +9,10 @@ function NumericMode(data, version) {
  * 取得 Mode 物件
  * @param {string} data 
  * @param {number} version 版本
+ * @param {boolean} enableEci 是否開啟 eci
  * @returns {?NumericMode} 若為合理資料回傳 Mode 物件，否則回傳 null
  */
-NumericMode.create = function (data, version) {
+NumericMode.create = function (data, version, enableEci) {
     if (data.search(/^\d+$/) > -1) {
         return new NumericMode(data, version);
     } else {
@@ -42,12 +43,34 @@ NumericMode.getCharCountIndicatorLength = function (version) {
  * @param {number} version 版本
  * @param {number} count 共幾個
  * @param {boolean} isConcat 是否接續前面（若為是，則不加 Indicator 長度）
+ * @param {number} remainder 當接續前面時，前面長度的餘數
  * @returns {number} 總長度，單位為 bit
  */
-NumericMode.getLength = function (version, count, isConcat) {
-    let r = count % 3;
-    let q = (count - r) / 3;
-    return q * 10 + (r ? (r === 1 ? 4 : 7) : 0) + (isConcat ? 0 : 4 + NumericMode.getCharCountIndicatorLength(version));
+NumericMode.getLength = function (version, count, isConcat, remainder) {
+    let prevLen = 0;
+    if (isConcat) {
+        switch (remainder) {
+            case 0:
+                prevLen = 0;
+                break;
+            case 1:
+                prevLen = 4;
+                break;
+            case 2:
+                prevLen = 7;
+                break;
+            default:
+                throw 'bad remainder: ' + remainder;
+        }
+        count += remainder;
+        const r = count % 3;
+        const q = (count - r) / 3;
+        return q * 10 + (r ? (r === 1 ? 4 : 7) : 0) - prevLen;
+    } else {
+        const r = count % 3;
+        const q = (count - r) / 3;
+        return q * 10 + (r ? (r === 1 ? 4 : 7) : 0) + 4 + NumericMode.getCharCountIndicatorLength(version);
+    }
 }
 
 NumericMode.prototype = {

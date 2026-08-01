@@ -1,40 +1,24 @@
 import BitBuffer from "../bit-buffer.js";
-import Graph from './graph.js';
-
-let cacheStr = null;
-let cacheGraph = null;
-
-/**
- * @param {string} data 
- * @returns {Graph}
- */
-function getGraph(data) {
-    if (cacheStr !== data) {
-        cacheStr = data;
-        cacheGraph = new Graph(cacheStr);
-    }
-    return cacheGraph;
-}
+import getBestPath from './graph.js';
 
 function MixedMode(data, version) {
-    this.data = data;
+    const [eci, path] = data;
+    this.data = path;
     this.len = this.data.reduce((len, mode) => {
         return len + mode.getLength()
-    }, 0);
+    }, 0) + (eci ? 12 : 0);
+    this.eci = eci;
 }
 
 /**
  * 取得 Mode 物件
  * @param {string} data 
  * @param {number} version 版本
+ * @param {boolean} enableEci 是否開啟 eci
  * @returns {?MixedMode} 若為合理資料回傳 Mode 物件，否則回傳 null
  */
-MixedMode.create = function (data, version) {
-    const graph = getGraph(data);
-    const bestPath = graph.getBestPath(version).map(o => {
-        return o.mode.create(o.str, version);
-    });
-    return new MixedMode(bestPath, version);
+MixedMode.create = function (data, version, enableEci) {
+    return new MixedMode(getBestPath(data, version, enableEci), version);
 }
 
 MixedMode.prototype = {
@@ -52,6 +36,9 @@ MixedMode.prototype = {
      * @param {BitBuffer} bin
      */
     write(bin) {
+        if(this.eci) {
+            bin.appendBits(0x71a, 12);
+        }
         this.data.forEach(mode => {
             mode.write(bin);
         });

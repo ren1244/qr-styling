@@ -267,10 +267,12 @@ function getRemainderBits(version) {
  * @param {string} data 資料
  * @param {?string} errorCorrection 錯誤校正等級：'L', 'M', 'Q', 'H'
  * @param {?number} version 版本
+ * @param {?boolean} enableEci 是否開啟 eci
  */
-function QrCode(data, errorCorrection, version) {
+function QrCode(data, errorCorrection, version, enableEci) {
     this.data = data;
     this.errorCorrection = errorCorrection || 'M';
+    this.enableEci = !!enableEci;
 
     let minModeAndVersion = this.autoSelectVersion();
     this.mode = minModeAndVersion['mode'];
@@ -311,7 +313,7 @@ QrCode.prototype = {
         let minLen = null;
         let minInst = null;
         for (let i = 0; i < modes.length; ++i) {
-            let inst = modes[i].create(this.data, version);
+            let inst = modes[i].create(this.data, version, this.enableEci);
             if (inst !== null) {
                 let len = inst.getLength();
                 if (minInst) {

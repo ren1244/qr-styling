@@ -3,8 +3,8 @@ import QrBase from "./qr-base.js";
 import StylingBase from "./styling/styling-base.js";
 
 class QrCode extends QrBase {
-    static create(data, errorCorrectionLevel, version) {
-        const qr = new QrCore(data, errorCorrectionLevel, version);
+    static create(data, errorCorrectionLevel, version, enableEci) {
+        const qr = new QrCore(data, errorCorrectionLevel, version, enableEci);
         const size = qr.getSize();
         const arr = new Uint8Array(size * size);
         for (let r = 0; r < size; ++r) {
