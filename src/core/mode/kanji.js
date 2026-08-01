@@ -50,7 +50,7 @@ KanjiMode.create = function (data, version) {
  * @param {number} unicode
  * @returns {boolean}
  */
-KanjiMode.hasUnicode = function(unicode) {
+KanjiMode.hasUnicode = function (unicode) {
     return u2k.has(unicode);
 }
 
@@ -68,9 +68,10 @@ KanjiMode.getCharCountIndicatorLength = function (version) {
  * @param {number} version 版本
  * @param {number} count 共幾個
  * @param {boolean} isConcat 是否接續前面（若為是，則不加 Indicator 長度）
+ * @param {number} remainder 當接續前面時，前面長度的餘數
  * @returns {number} 總長度，單位為 bit
  */
-KanjiMode.getLength = function (version, count, isConcat) {
+KanjiMode.getLength = function (version, count, isConcat, remainder) {
     return count * 13 + (isConcat ? 0 : 4 + KanjiMode.getCharCountIndicatorLength(version));
 }
 

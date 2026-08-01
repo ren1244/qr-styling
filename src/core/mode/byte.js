@@ -38,9 +38,10 @@ ByteMode.getCharCountIndicatorLength = function (version) {
  * @param {number} version 版本
  * @param {number} count 共幾個
  * @param {boolean} isConcat 是否接續前面（若為是，則不加 Indicator 長度）
+ * @param {number} remainder 當接續前面時，前面長度的餘數
  * @returns {number} 總長度，單位為 bit
  */
-ByteMode.getLength = function (version, count, isConcat) {
+ByteMode.getLength = function (version, count, isConcat, remainder) {
     return count * 8 + (isConcat ? 0 : 4 + ByteMode.getCharCountIndicatorLength(version));
 }
 

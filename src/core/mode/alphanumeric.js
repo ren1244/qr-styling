@@ -34,7 +34,7 @@ AlphanumericMode.create = function (data, version) {
  * @param {number} unicode
  * @returns {boolean}
  */
-AlphanumericMode.hasUnicode = function(unicode) {
+AlphanumericMode.hasUnicode = function (unicode) {
     return codeMap.has(unicode);
 }
 
@@ -52,10 +52,22 @@ AlphanumericMode.getCharCountIndicatorLength = function (version) {
  * @param {number} version 版本
  * @param {number} count 共幾個
  * @param {boolean} isConcat 是否接續前面（若為是，則不加 Indicator 長度）
+ * @param {number} remainder 當接續前面時，前面長度的餘數
  * @returns {number} 總長度，單位為 bit
  */
-AlphanumericMode.getLength = function(version, count, isConcat) {
-    return (count >>> 1) * 11 + (count & 1) * 6 + (isConcat ? 0 : 4 + AlphanumericMode.getCharCountIndicatorLength(version));
+AlphanumericMode.getLength = function (version, count, isConcat, remainder) {
+    if (isConcat) {
+        switch (remainder) {
+            case 0:
+                return (count >>> 1) * 11 + (count & 1) * 6;
+            case 1:
+                return 5 + (count - 1 >>> 1) * 11 + (count - 1 & 1) * 6;
+            default:
+                throw 'bad remainder: ' + remainder;
+        }
+    } else {
+        return (count >>> 1) * 11 + (count & 1) * 6 + 4 + AlphanumericMode.getCharCountIndicatorLength(version);
+    }
 }
 
 AlphanumericMode.prototype = {
@@ -64,29 +76,29 @@ AlphanumericMode.prototype = {
      * 取得此寫入資料需要幾位元
      * @returns {number}
      */
-    getLength () {
+    getLength() {
         let len = this.data.length;
         return 4 + this.countIndicatorLength + (len >>> 1) * 11 + (len & 1) * 6;
     },
-    
+
     /**
      * 寫入到 Binary 物件
      * @param {BitBuffer} bin
      */
-    write (bin) {
+    write(bin) {
         // mode indicator
         bin.appendBits(2, 4);
-    
+
         // character count indicator
         bin.appendBits(this.data.length, this.countIndicatorLength);
-    
+
         // value
         let str = this.data;
         for (let i = 1; i < str.length; i += 2) {
             let x = codeMap.get(str.codePointAt(i - 1)) * 45 + codeMap.get(str.codePointAt(i));
             bin.appendBits(x, 11);
         }
-        if(str.length & 1) {
+        if (str.length & 1) {
             let x = codeMap.get(str.codePointAt(str.length - 1));
             bin.appendBits(x, 6);
         }
