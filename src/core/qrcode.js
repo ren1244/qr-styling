@@ -1,8 +1,12 @@
+import AlphanumericMode from './mode/alphanumeric.js';
+import ByteMode from './mode/byte.js';
+import KanjiMode from './mode/kanji.js';
+import NumericMode from './mode/numeric.js';
 import MixedMode from './mode/mixed.js';
 import BitBuffer from './bit-buffer.js';
 import Matrix from './matrix.js';
 
-const modes = [MixedMode];
+/** @typedef {typeof AlphanumericMode|typeof ByteMode|typeof KanjiMode|typeof NumericMode|typeof MixedMode} Mode */
 
 /**
  * 依「容錯等級」與「版本」取得其相關資訊，內容如下：
@@ -264,27 +268,91 @@ function getRemainderBits(version) {
 }
 
 /**
- * @param {string} data 資料
- * @param {?string} errorCorrection 錯誤校正等級：'L', 'M', 'Q', 'H'
- * @param {?number} version 版本
- * @param {?boolean} enableEci 是否開啟 eci
+ * @typedef {object} QrCodeOptions
+ * @property {('L'|'M'|'Q'|'H')} [errorCorrection] - 錯誤修正等級 ('L', 'M', 'Q', 'H')，預設為 'M'
+ * @property {number} [version] - QR Code 版本 (0 表示自動，或 1-40)，預設為 0
+ * @property {boolean} [enableEci] - 是否啟用 ECI (Extended Channel Interpretation)，預設為 false
+ * @property {function[]} [modes] - 允許的編碼模式陣列，預設為 [MixedMode]
  */
-function QrCode(data, errorCorrection, version, enableEci) {
-    this.data = data;
-    this.errorCorrection = errorCorrection || 'M';
-    this.enableEci = !!enableEci;
 
-    let minModeAndVersion = this.autoSelectVersion();
-    this.mode = minModeAndVersion['mode'];
-    if (version) {
-        if (version < minModeAndVersion['version']) {
+const optionConfig = {
+    errorCorrection: {
+        value: 'M',
+        valid(x) {
+            if (['L', 'M', 'Q', 'H'].indexOf(x) < 0) {
+                throw `option.errorCorrection must be 'L', 'M', 'Q', 'H'`;
+            }
+        }
+    },
+    version: {
+        value: 0,
+        valid(x) {
+            if (!Number.isInteger(x) || x < 0 || x > 40) {
+                throw `option.version must be 0(auto) or 1-40`;
+            }
+        }
+    },
+    enableEci: {
+        value: false,
+        valid(x) {
+            if (x !== true && x !== false) {
+                throw `option.enableEci must be true or false`;
+            }
+        }
+    },
+    modes: {
+        value: [MixedMode],
+        valid(x) {
+            const errMsg = `option.modes must be array of AlphanumericMode, ByteMode, KanjiMode, NumericMode or MixedMode`;
+            if (!Array.isArray(x)) {
+                throw errMsg;
+            }
+            for (let m of x) {
+                if (
+                    m !== AlphanumericMode &&
+                    m !== ByteMode &&
+                    m !== KanjiMode &&
+                    m !== NumericMode &&
+                    m !== MixedMode
+                ) {
+                    throw errMsg;
+                }
+            }
+        }
+    }
+};
+
+/**
+ * @param {string} data 資料
+ * @param {QrCodeOptions} option 
+ */
+function QrCode(data, option = {}) {
+    // data
+    if (typeof data !== 'string') {
+        throw `data must be string`;
+    }
+    this.data = data;
+
+    // option
+    for (let key in optionConfig) {
+        const { value: defaultValue, valid } = optionConfig[key];
+        this[key] = option[key] !== undefined ? option[key] : defaultValue;
+        valid(this[key]);
+    }
+
+    // 計算 version 與 mode
+    const { version: minVersion, mode } = this.minVersionAndMode();
+    this.mode = mode;
+    if (this.version) {
+        if (this.version < minVersion) {
             throw `版本 ${version} 容量不夠`;
         }
         this.version = version;
     } else {
-        this.version = minModeAndVersion['version'];
+        this.version = minVersion;
     }
 
+    // 寫入資料
     let blockInfo = dict[this.errorCorrection][this.version];
     this.buffer = new BitBuffer(
         blockInfo[1],
@@ -312,8 +380,8 @@ QrCode.prototype = {
     minLenMode(version) {
         let minLen = null;
         let minInst = null;
-        for (let i = 0; i < modes.length; ++i) {
-            let inst = modes[i].create(this.data, version, this.enableEci);
+        for (let i = 0; i < this.modes.length; ++i) {
+            let inst = this.modes[i].create(this.data, version, this.enableEci);
             if (inst !== null) {
                 let len = inst.getLength();
                 if (minInst) {
@@ -346,10 +414,10 @@ QrCode.prototype = {
     },
 
     /**
-     * 自動選擇最低版本
+     * 自動選擇最低版本與 mode
      * @returns {{version: number, mode: NumericMode|AlphanumericMode|ByteMode|KanjiMode}}
      */
-    autoSelectVersion() {
+    minVersionAndMode() {
         // version 1 ~ 9, 10 ~ 26, 27 ~ 40 每段算出來的長度都是相同的
         let testVersion = [[1, 9], [10, 26], [27, 40]];
         let mode = null;

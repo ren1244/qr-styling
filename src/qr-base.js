@@ -8,8 +8,8 @@ import StylingBase from "./styling/styling-base.js";
 
 class QrBase {
 
-    static create(data, errorCorrectionLevel, version) {
-        throw '(data, errorCorrectionLevel, version) => {data: array, size: number}'
+    static create(...args) {
+        throw '(...args) => {data: array, size: number}'
     }
 
     static stylings = {
@@ -31,8 +31,8 @@ class QrBase {
         QrBase.stylings[styling] = stylingClass;
     }
 
-    constructor(data, errorCorrectionLevel, version, enableEci) {
-        const qr = this.constructor.create(data, errorCorrectionLevel, version, enableEci);
+    constructor(...args) {
+        const qr = this.constructor.create(...args);
         this.data = qr.data;
         this.size = qr.size;
     }

@@ -20,10 +20,16 @@
 #### 瀏覽器
 
 ```javascript
-import { QrCode } from "@ren1244/qr-styling/build/browser.esm.js";
+import { QrCode, MixedMode } from "@ren1244/qr-styling/build/browser.esm.js";
 
 // 建立 QR Code
-const qr = new QrCode('Some Input Data', 'H');
+// 第二個參數為可選
+const qr = new QrCode('Some Input Data', {
+    errorCorrection: 'H', // 錯誤修正等級 ('L', 'M', 'Q', 'H')，預設為 'M'
+    version: 0,           // QR Code 版本 (0 表示自動，或 1-40)，預設為 0
+    enableEci: false,     // 是否啟用 ECI (Extended Channel Interpretation)，預設為 false
+    modes: [MixedMode],   // 允許的編碼模式陣列，預設為 [MixedMode]
+});
 
 // 選擇 styling 並畫到畫布上
 // 內建的 styling 有："classy"、"classy-rounded"、"dots"、"extra-rounded"、"rounded"、"square"
@@ -51,7 +57,7 @@ import { QrCode } from "@ren1244/qr-styling";
 import fs from 'node:fs';
 
 // 建立 QR Code
-const qr = new QrCode('Some Input Data', 'H');
+const qr = new QrCode('Some Input Data');
 
 // 直接取得 svg 內容並輸出
 const svgCode = qr.styling('square').toSvg(400, 40);
@@ -137,12 +143,8 @@ qrcode.stringToBytes = (() => {
 
 // 使用第三方 QR Code 核心：繼承 QrBase 並覆寫 create 靜態方法
 class QrCode extends QrBase {
-    static create(data, errorCorrectionLevel, version, enableEci) {
-        version = version || 0;
-        if (['L', 'M', 'Q', 'H'].indexOf(errorCorrectionLevel) < 0) {
-            errorCorrectionLevel = 'M';
-        }
-        const qr = qrcode(version, errorCorrectionLevel);
+    static create(data, typeNumber = 0, errorCorrectionLevel = 'M') {
+        const qr = qrcode(typeNumber, errorCorrectionLevel);
         qr.addData(data, 'Byte');
         qr.make();
         const size = qr.getModuleCount();
@@ -156,5 +158,9 @@ class QrCode extends QrBase {
     }
 }
 
+// 建立 QR Code 時，參數與 create 靜態方法相同
+const qr = new QrCode('Some Input Data');
+
 // 後續即可使用 QrCode 如之前的範例
+const svgCode = qr.styling('square').toSvg(400, 40);
 ```
