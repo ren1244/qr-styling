@@ -272,7 +272,7 @@ function getRemainderBits(version) {
  * @property {('L'|'M'|'Q'|'H')} [errorCorrection] - 錯誤修正等級 ('L', 'M', 'Q', 'H')，預設為 'M'
  * @property {number} [version] - QR Code 版本 (0 表示自動，或 1-40)，預設為 0
  * @property {boolean} [enableEci] - 是否啟用 ECI (Extended Channel Interpretation)，預設為 false
- * @property {function[]} [modes] - 允許的編碼模式陣列，預設為 [MixedMode]
+ * @property {Mode[]} [modes] - 允許的編碼模式陣列，預設為 [MixedMode]
  */
 
 const optionConfig = {
@@ -322,55 +322,54 @@ const optionConfig = {
     }
 };
 
-/**
- * @param {string} data 資料
- * @param {QrCodeOptions} option 
- */
-function QrCode(data, option = {}) {
-    // data
-    if (typeof data !== 'string') {
-        throw `data must be string`;
-    }
-    this.data = data;
-
-    // option
-    for (let key in optionConfig) {
-        const { value: defaultValue, valid } = optionConfig[key];
-        this[key] = option[key] !== undefined ? option[key] : defaultValue;
-        valid(this[key]);
-    }
-
-    // 計算 version 與 mode
-    const { version: minVersion, mode } = this.minVersionAndMode();
-    this.mode = mode;
-    if (this.version) {
-        if (this.version < minVersion) {
-            throw `版本 ${version} 容量不夠`;
+class QrCode {
+    /**
+     * @param {string} data 資料
+     * @param {QrCodeOptions} option 
+     */
+    constructor(data, option = {}) {
+        // data
+        if (typeof data !== 'string') {
+            throw `data must be string`;
         }
-        this.version = version;
-    } else {
-        this.version = minVersion;
+        this.data = data;
+
+        // option
+        for (let key in optionConfig) {
+            const { value: defaultValue, valid } = optionConfig[key];
+            this[key] = option[key] !== undefined ? option[key] : defaultValue;
+            valid(this[key]);
+        }
+
+        // 計算 version 與 mode
+        const { version: minVersion, mode } = this.minVersionAndMode();
+        this.mode = mode;
+        if (this.version) {
+            if (this.version < minVersion) {
+                throw `版本 ${version} 容量不夠`;
+            }
+            this.version = version;
+        } else {
+            this.version = minVersion;
+        }
+
+        // 寫入資料
+        let blockInfo = dict[this.errorCorrection][this.version];
+        this.buffer = new BitBuffer(
+            blockInfo[1],
+            blockInfo[2],
+            blockInfo[3] || 0,
+            blockInfo[4] || 0,
+            blockInfo[0],
+            getRemainderBits(this.version)
+        );
+        this.mode.write(this.buffer);
+        this.buffer.terminator();
+        this.buffer.padding();
+        this.buffer.errorCorrection();
+        this.buffer.remainderBits();
+        this.matrix = this.buildMatrix();
     }
-
-    // 寫入資料
-    let blockInfo = dict[this.errorCorrection][this.version];
-    this.buffer = new BitBuffer(
-        blockInfo[1],
-        blockInfo[2],
-        blockInfo[3] || 0,
-        blockInfo[4] || 0,
-        blockInfo[0],
-        getRemainderBits(this.version)
-    );
-    this.mode.write(this.buffer);
-    this.buffer.terminator();
-    this.buffer.padding();
-    this.buffer.errorCorrection();
-    this.buffer.remainderBits();
-    this.matrix = this.buildMatrix();
-}
-
-QrCode.prototype = {
 
     /**
      * 取得某版本下，能產生最短長度的 mode 實例
@@ -396,7 +395,7 @@ QrCode.prototype = {
             }
         }
         return minInst;
-    },
+    }
 
     /**
      * 驗證某版本是否可使用
@@ -411,7 +410,7 @@ QrCode.prototype = {
             size += info[4] * info[3];
         }
         return mode !== null && mode.getLength() <= size * 8;
-    },
+    }
 
     /**
      * 自動選擇最低版本與 mode
@@ -446,7 +445,7 @@ QrCode.prototype = {
             return { version: maxVer, mode };
         }
         throw '無法找到合適的版本';
-    },
+    }
 
     /**
      * 把 qr code 「畫」到 Matrix 物件
@@ -569,7 +568,7 @@ QrCode.prototype = {
             }
         }
         return mtx;
-    },
+    }
 
     /**
      * 取得此 QR Code 行(列)的格子數(不含靜默區域)
@@ -577,7 +576,7 @@ QrCode.prototype = {
      */
     getSize() {
         return 21 + 4 * (this.version - 1);
-    },
+    }
 
     /**
      * 取得某座標點的格子是黑色還是白色
@@ -587,7 +586,7 @@ QrCode.prototype = {
      */
     getPoint(row, col) {
         return this.matrix.getPoint(row, col, this.matrix.getBestMaskVersion());
-    },
+    }
 
     /**
      * 採用的 mask 版本
@@ -595,7 +594,7 @@ QrCode.prototype = {
      */
     getMaskVersion() {
         return this.matrix.getBestMaskVersion();
-    },
+    }
 }
 
 export default QrCode;
