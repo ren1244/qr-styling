@@ -5,17 +5,21 @@ import ByteMode from './byte.js';
 import dijkstra from 'dijkstrajs';
 
 // for start and end node
-function NullMode() { }
+class NullMode { }
 
 /**
- * @typedef {typeof NumericMode|typeof AlphanumericMode|typeof KanjiMode|typeof ByteMode|typeof NullMode} Mode
+ * @typedef {typeof NumericMode|typeof AlphanumericMode|typeof KanjiMode|typeof ByteMode|typeof NullMode} ModeClass
+ */
+
+/**
+ * @typedef {NumericMode|AlphanumericMode|KanjiMode|ByteMode} ModeInst
  */
 
 class Node {
 
     /**
      * @param {number} pos 
-     * @param {Mode} mode 
+     * @param {ModeClass} mode 
      * @param {number} remainder 
      * @param {boolean} eciFlag 
      */
@@ -25,7 +29,7 @@ class Node {
 
     /**
      * @param {number} pos 
-     * @param {Mode} mode 
+     * @param {ModeClass} mode 
      * @param {number} remainder 
      * @param {boolean} eciFlag 
      */
@@ -41,16 +45,16 @@ class Node {
 class NodeCollection {
 
     constructor() {
-        /** @type {Map<id: string, Node>} */
+        /** @type {Map<string, Node>} */
         this.dict = new Map();
 
-        /** @type {Map<pos: number, Node[]>} */
+        /** @type {Map<number, Node[]>} */
         this.groups = new Map();
     }
 
     /**
      * @param {number} pos 
-     * @param {Mode} mode 
+     * @param {ModeClass} mode 
      * @param {number} remainder 
      * @param {boolean} eciFlag 
      * @returns {Node}
@@ -85,6 +89,13 @@ class NodeCollection {
     }
 }
 
+/**
+ * 找出代表字串的最短路徑的編碼
+ * @param {string} str 輸入字串
+ * @param {number} version 版本
+ * @param {?boolean} enableEci 是否啟用 ECI
+ * @returns {[boolean, ModeInst[]]} [eci, result]
+ */
 function getBestPath(str, version, enableEci) {
     const nodeCollection = new NodeCollection();
     const startNode = nodeCollection.getNode(0, NullMode, 0, false);
@@ -99,7 +110,7 @@ function getBestPath(str, version, enableEci) {
     }
 
     /**
-     * @param {Mode} mode 
+     * @param {ModeClass} mode 
      * @param {number} pos 
      * @param {number} count 
      */
@@ -160,12 +171,11 @@ function getBestPath(str, version, enableEci) {
     const result = [];
     pos = 0;
     let startIdx = 0;
-    /** @type {?Mode} */
+    /** @type {?ModeClass} */
     let prevMode = null;
     let i;
     for (i = 0; i < str.length; ++i) {
         const unicode = str.codePointAt(i);
-        const nBytes = unicode < 0x800 ? (unicode < 0x80 ? 1 : 2) : (unicode < 0x10000 ? 3 : 4);
         ++pos;
         const node = nodeCollection.getNodeById(path[pos]);
         if (node.mode !== prevMode) {

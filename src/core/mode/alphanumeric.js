@@ -10,68 +10,68 @@ const codeMap = (() => {
     return m;
 })();
 
-function AlphanumericMode(data, version) {
-    this.data = data;
-    this.countIndicatorLength = AlphanumericMode.getCharCountIndicatorLength(version);
-}
+class AlphanumericMode {
 
-/**
- * 取得 Mode 物件
- * @param {string} data 
- * @param {number} version 版本
- * @param {boolean} enableEci 是否開啟 eci
- * @returns {?AlphanumericMode} 若為合理資料回傳 Mode 物件，否則回傳 null
- */
-AlphanumericMode.create = function (data, version, enableEci) {
-    if (data.search(/^[0-9A-Z \$\%\*\+\-\.\/\:]+$/) > -1) {
-        return new AlphanumericMode(data, version);
-    } else {
-        return null;
-    }
-}
-
-/**
- * 判斷某字是否能使用此模式
- * @param {number} unicode
- * @returns {boolean}
- */
-AlphanumericMode.hasUnicode = function (unicode) {
-    return codeMap.has(unicode);
-}
-
-/**
- * 取得在某版本時 character count indicator 所需要的位元數
- * @param {number} version 版本
- * @returns {number}
- */
-AlphanumericMode.getCharCountIndicatorLength = function (version) {
-    return version < 10 ? 9 : (version < 27 ? 11 : 13);
-}
-
-/**
- * 計算長度
- * @param {number} version 版本
- * @param {number} count 共幾個
- * @param {boolean} isConcat 是否接續前面（若為是，則不加 Indicator 長度）
- * @param {number} remainder 當接續前面時，前面長度的餘數
- * @returns {number} 總長度，單位為 bit
- */
-AlphanumericMode.getLength = function (version, count, isConcat, remainder) {
-    if (isConcat) {
-        switch (remainder) {
-            case 0:
-                return (count >>> 1) * 11 + (count & 1) * 6;
-            case 1:
-                return 5 + (count - 1 >>> 1) * 11 + (count - 1 & 1) * 6;
-            default:
-                throw 'bad remainder: ' + remainder;
+    /**
+     * 取得 Mode 物件
+     * @param {string} data 
+     * @param {number} version 版本
+     * @param {boolean} enableEci 是否開啟 eci
+     * @returns {?AlphanumericMode} 若為合理資料回傳 Mode 物件，否則回傳 null
+     */
+    static create = function (data, version, enableEci) {
+        if (data.search(/^[0-9A-Z \$\%\*\+\-\.\/\:]+$/) > -1) {
+            return new AlphanumericMode(data, version);
+        } else {
+            return null;
         }
-    } else {
-        return (count >>> 1) * 11 + (count & 1) * 6 + 4 + AlphanumericMode.getCharCountIndicatorLength(version);
     }
-}
 
-AlphanumericMode.prototype = {
+    /**
+     * 判斷某字是否能使用此模式
+     * @param {number} unicode
+     * @returns {boolean}
+     */
+    static hasUnicode = function (unicode) {
+        return codeMap.has(unicode);
+    }
+
+    /**
+     * 取得在某版本時 character count indicator 所需要的位元數
+     * @param {number} version 版本
+     * @returns {number}
+     */
+    static getCharCountIndicatorLength = function (version) {
+        return version < 10 ? 9 : (version < 27 ? 11 : 13);
+    }
+
+    /**
+     * 計算長度
+     * @param {number} version 版本
+     * @param {number} count 共幾個
+     * @param {boolean} isConcat 是否接續前面（若為是，則不加 Indicator 長度）
+     * @param {number} remainder 當接續前面時，前面長度的餘數
+     * @returns {number} 總長度，單位為 bit
+     */
+    static getLength = function (version, count, isConcat, remainder) {
+        if (isConcat) {
+            switch (remainder) {
+                case 0:
+                    return (count >>> 1) * 11 + (count & 1) * 6;
+                case 1:
+                    return 5 + (count - 1 >>> 1) * 11 + (count - 1 & 1) * 6;
+                default:
+                    throw 'bad remainder: ' + remainder;
+            }
+        } else {
+            return (count >>> 1) * 11 + (count & 1) * 6 + 4 + AlphanumericMode.getCharCountIndicatorLength(version);
+        }
+    }
+
+    constructor(data, version) {
+        this.data = data;
+        this.countIndicatorLength = AlphanumericMode.getCharCountIndicatorLength(version);
+    }
 
     /** 
      * 取得此寫入資料需要幾位元
@@ -80,7 +80,7 @@ AlphanumericMode.prototype = {
     getLength() {
         let len = this.data.length;
         return 4 + this.countIndicatorLength + (len >>> 1) * 11 + (len & 1) * 6;
-    },
+    }
 
     /**
      * 寫入到 Binary 物件
@@ -103,7 +103,7 @@ AlphanumericMode.prototype = {
             let x = codeMap.get(str.codePointAt(str.length - 1));
             bin.appendBits(x, 6);
         }
-    },
+    }
 
     /**
      * 取得此 Mode 名稱
@@ -111,7 +111,7 @@ AlphanumericMode.prototype = {
      */
     getName() {
         return 'Alphanumeric';
-    },
-};
+    }
+}
 
 export default AlphanumericMode;

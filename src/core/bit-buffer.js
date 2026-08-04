@@ -1,24 +1,25 @@
 import { get_division, p_mod } from './rs.js';
 
-function BitBuffer(nRow1, nCol1, nRow2, nCol2, nColEC, remainderBits) {
-    this.nRow1 = nRow1;
-    this.nCol1 = nCol1;
-    this.nRow2 = nRow2;
-    this.nCol2 = nCol2;
-    this.nColEC = nColEC;
-    this.nRemainderBits = remainderBits;
+class BitBuffer
+{
+    constructor(nRow1, nCol1, nRow2, nCol2, nColEC, remainderBits) {
+        this.nRow1 = nRow1;
+        this.nCol1 = nCol1;
+        this.nRow2 = nRow2;
+        this.nCol2 = nCol2;
+        this.nColEC = nColEC;
+        this.nRemainderBits = remainderBits;
+    
+        this.nRowTotal = nRow1 + nRow2;
+        this.n1 = nRow1 * nCol1; // num of group 1
+        this.n2 = this.n1 + nRow2 * nCol2; // num of group 1 + group2 ( = data code words length)
+        this.n3 = this.n2 + this.nRowTotal * nColEC;
+        this.n4 = this.n3 + (remainderBits + 7 >>> 3);
+    
+        this.arr = new Uint8Array(this.n4);
+        this.bitIdx = 0;
+    }
 
-    this.nRowTotal = nRow1 + nRow2;
-    this.n1 = nRow1 * nCol1; // num of group 1
-    this.n2 = this.n1 + nRow2 * nCol2; // num of group 1 + group2 ( = data code words length)
-    this.n3 = this.n2 + this.nRowTotal * nColEC;
-    this.n4 = this.n3 + (remainderBits + 7 >>> 3);
-
-    this.arr = new Uint8Array(this.n4);
-    this.bitIdx = 0;
-}
-
-BitBuffer.prototype = {
     writeIndex(k) {
         if (k < 0 || k >= this.n4) {
             throw new RangeError();
@@ -45,7 +46,7 @@ BitBuffer.prototype = {
         } else {
             return k;
         }
-    },
+    }
 
     appendBits(x, nBits) {
         while (nBits > 0) {
@@ -61,12 +62,12 @@ BitBuffer.prototype = {
                 nBits -= k;
             }
         }
-    },
+    }
 
     terminator() {
         let n = (this.n2 << 3) - this.bitIdx;
         this.appendBits(0, n > 4 ? 4 : n);
-    },
+    }
 
     padding() {
         // 補 0 到整個 byte
@@ -77,7 +78,7 @@ BitBuffer.prototype = {
         for (let i = 0; i < n; ++i) {
             this.appendBits(((i & 1) ? 0x11 : 0xec), 8);
         }
-    },
+    }
 
     errorCorrection() {
         // 除式
@@ -111,19 +112,19 @@ BitBuffer.prototype = {
                 }
             }
         }
-    },
+    }
 
     remainderBits() {
         this.appendBits(0, this.nRemainderBits);
-    },
+    }
 
     getBit(k) {
         return 0 <= k && k < this.bitIdx ? (this.arr[k >>> 3] >>> 7 - (k & 7) & 1) : null;
-    },
+    }
 
     bitLen() {
         return this.bitIdx;
-    },
-};
+    }
+}
 
 export default BitBuffer;

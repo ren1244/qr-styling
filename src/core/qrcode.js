@@ -571,14 +571,28 @@ QrCode.prototype = {
         return mtx;
     },
 
+    /**
+     * 取得此 QR Code 行(列)的格子數(不含靜默區域)
+     * @returns {number}
+     */
     getSize() {
         return 21 + 4 * (this.version - 1);
     },
 
+    /**
+     * 取得某座標點的格子是黑色還是白色
+     * @param {number} row 第幾列(從 0 開始)
+     * @param {number} col 第幾行(從 0 開始)
+     * @returns {0|1|null} 如果是黑色回傳 1，白色回傳 0，超出範圍回傳 null
+     */
     getPoint(row, col) {
         return this.matrix.getPoint(row, col, this.matrix.getBestMaskVersion());
     },
 
+    /**
+     * 採用的 mask 版本
+     * @returns {number|null}
+     */
     getMaskVersion() {
         return this.matrix.getBestMaskVersion();
     },

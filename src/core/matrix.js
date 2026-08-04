@@ -5,17 +5,13 @@ const P_FIXED_FALSE = 0xaaaa;
 const P_OFFSET = [0, 2, 4, 6, 8, 10, 12, 14];
 const P_MASK = 3;
 
-/**
- * @class
- * @implements {Canvas}
- */
-function Matrix(size) {
-    this.sz = size;
-    this.arr = new Uint16Array(size * size);
-    this.best = null;
-}
-
-Matrix.prototype = {
+class Matrix
+{
+    constructor(size) {
+        this.sz = size;
+        this.arr = new Uint16Array(size * size);
+        this.best = null;
+    }
 
     setPoint(row, col, val, maskVersion) {
         if (maskVersion === undefined) {
@@ -24,7 +20,7 @@ Matrix.prototype = {
             val = (val ? P_TRUE : P_FALSE) << P_OFFSET[maskVersion];
         }
         this.arr[row * this.sz + col] |= val;
-    },
+    }
 
     setMaskPoint(row, col, val) {
         const mask = ((row + col) % 2 ? 0 : 1) |
@@ -36,7 +32,7 @@ Matrix.prototype = {
             (((row * col) % 3 + row * col) % 2 ? 0 : 4096) |
             (((row * col) % 3 + row + col) % 2 ? 0 : 16384);
         this.arr[row * this.sz + col] = (val ? P_FIXED_TRUE : P_FIXED_FALSE) ^ mask;
-    },
+    }
 
     getPoint(row, col, maskVersion) {
         let val = this.arr[row * this.sz + col];
@@ -46,7 +42,7 @@ Matrix.prototype = {
             val = val >>> P_OFFSET[maskVersion] & P_MASK;
             return val === P_TRUE ? 1 : (val === P_FALSE ? 0 : null);
         }
-    },
+    }
 
     getBestMaskVersion() {
         if (this.best === null) {
@@ -132,7 +128,7 @@ Matrix.prototype = {
             this.best = selectMaskVersion;
         }
         return this.best;
-    },
-};
+    }
+}
 
 export default Matrix;

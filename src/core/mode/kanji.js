@@ -17,66 +17,65 @@ const u2k = (() => {
     return m;
 })();
 
-function KanjiMode(data, version) {
-    /** @type {number[]} shift-jis codes */
-    this.data = data;
-    this.countIndicatorLength = KanjiMode.getCharCountIndicatorLength(version);
-}
-
-/**
- * 取得 Mode 物件
- * @param {string} data 
- * @param {number} version 版本
- * @param {boolean} enableEci 是否開啟 eci
- * @returns {?KanjiMode} 若為合理資料回傳 Mode 物件，否則回傳 null
- */
-KanjiMode.create = function (data, version, enableEci) {
-    let kanjiArray = [];
-    for (let i = 0; i < data.length; ++i) {
-        let u = data.codePointAt(i);
-        let k = u2k.get(u);
-        if (k === undefined) {
-            return null;
+class KanjiMode {
+    /**
+     * 取得 Mode 物件
+     * @param {string} data 
+     * @param {number} version 版本
+     * @param {boolean} enableEci 是否開啟 eci
+     * @returns {?KanjiMode} 若為合理資料回傳 Mode 物件，否則回傳 null
+     */
+    static create = function (data, version, enableEci) {
+        let kanjiArray = [];
+        for (let i = 0; i < data.length; ++i) {
+            let u = data.codePointAt(i);
+            let k = u2k.get(u);
+            if (k === undefined) {
+                return null;
+            }
+            kanjiArray.push(k);
+            if (u > 0xffff) {
+                ++i;
+            }
         }
-        kanjiArray.push(k);
-        if (u > 0xffff) {
-            ++i;
-        }
+        return new KanjiMode(kanjiArray, version);
     }
-    return new KanjiMode(kanjiArray, version);
-}
 
-/**
- * 判斷某字是否能使用此模式
- * @param {number} unicode
- * @returns {boolean}
- */
-KanjiMode.hasUnicode = function (unicode) {
-    return u2k.has(unicode);
-}
+    /**
+     * 判斷某字是否能使用此模式
+     * @param {number} unicode
+     * @returns {boolean}
+     */
+    static hasUnicode = function (unicode) {
+        return u2k.has(unicode);
+    }
 
-/**
- * 取得在某版本時 character count indicator 所需要的位元數
- * @param {number} version 版本
- * @returns {number}
- */
-KanjiMode.getCharCountIndicatorLength = function (version) {
-    return version < 10 ? 8 : (version < 27 ? 10 : 12);
-}
+    /**
+     * 取得在某版本時 character count indicator 所需要的位元數
+     * @param {number} version 版本
+     * @returns {number}
+     */
+    static getCharCountIndicatorLength = function (version) {
+        return version < 10 ? 8 : (version < 27 ? 10 : 12);
+    }
 
-/**
- * 計算長度
- * @param {number} version 版本
- * @param {number} count 共幾個
- * @param {boolean} isConcat 是否接續前面（若為是，則不加 Indicator 長度）
- * @param {number} remainder 當接續前面時，前面長度的餘數
- * @returns {number} 總長度，單位為 bit
- */
-KanjiMode.getLength = function (version, count, isConcat, remainder) {
-    return count * 13 + (isConcat ? 0 : 4 + KanjiMode.getCharCountIndicatorLength(version));
-}
+    /**
+     * 計算長度
+     * @param {number} version 版本
+     * @param {number} count 共幾個
+     * @param {boolean} isConcat 是否接續前面（若為是，則不加 Indicator 長度）
+     * @param {number} remainder 當接續前面時，前面長度的餘數
+     * @returns {number} 總長度，單位為 bit
+     */
+    static getLength = function (version, count, isConcat, remainder) {
+        return count * 13 + (isConcat ? 0 : 4 + KanjiMode.getCharCountIndicatorLength(version));
+    }
 
-KanjiMode.prototype = {
+    constructor(data, version) {
+        /** @type {number[]} shift-jis codes */
+        this.data = data;
+        this.countIndicatorLength = KanjiMode.getCharCountIndicatorLength(version);
+    }
 
     /** 
      * 取得此寫入資料需要幾位元
@@ -84,7 +83,7 @@ KanjiMode.prototype = {
      */
     getLength() {
         return 4 + this.countIndicatorLength + this.data.length * 13;
-    },
+    }
 
     /**
      * 寫入到 Binary 物件
@@ -107,7 +106,7 @@ KanjiMode.prototype = {
             }
             bin.appendBits((x >>> 8 & 0xff) * 192 + (x & 0xff), 13);
         }
-    },
+    }
 
     /**
      * 取得此 Mode 名稱
@@ -115,7 +114,7 @@ KanjiMode.prototype = {
      */
     getName() {
         return 'Kanji';
-    },
-};
+    }
+}
 
 export default KanjiMode;
