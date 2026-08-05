@@ -1,79 +1,79 @@
 # @ren1244/qr-styling
 
-一個模組化且可自訂樣式的 JavaScript QR Code 產生與渲染工具。支援瀏覽器與 Node.js 環境。
+A modular and customizable JavaScript QR Code generation and rendering tool. Supports both browser and Node.js environments.
 
-## 特點
+## Features
 
-1. **自動編碼切換**：自動切換編碼模式，用最少的格子表達相同的資料。
-2. **解決 SVG 間隙與鋸齒問題**：利用 [fill-rule](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/fill-rule) 產生表達整個 QR Code 的路徑。既能消除格子間隙，又能保持圓角平滑，同時產生的 svg 檔案也比較小。
-3. **分段式處理流程**：將 QR Code 的生成拆成三個階段，使用起來更彈性：
-   * **Qr Code 編碼**：原始資料轉為 QR Code 矩陣（0 與 1 組成的陣列）。
-   * **產生繪圖命令**：將 QR Code 矩陣轉換為繪圖命令。
-   * **渲染到目標**：依據繪圖命令輸出為 SVG、Canvas 圖片（甚至可擴充支援 PDF）。
-4. **靈活的版面配置**：提供 API 將 QR Code 「畫」到 Canvas 上的任意位置（例如：可在同一張 Canvas 上自由排版多個 QR Code）。
-5. **高度可擴充**：可擴充自訂樣式（Styling）或替換底層 QR Code 核心函式庫。
-6. **跨環境支援**：原生支援瀏覽器，在 Node.js 環境下也能自由搭配任何相容 Canvas API 的第三方函式庫（如 `skia-canvas`）。
+1. **Automatic Mode Switching**: Automatically switches encoding modes to represent the same data with the fewest modules possible.
+2. **Eliminates SVG Gaps and Aliasing**: Utilizes SVG [fill-rule](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/fill-rule) to generate a single path representing the entire QR Code. This eliminates grid gaps while keeping rounded corners smooth and producing a smaller SVG file size.
+3. **Multi-Stage Processing Pipeline**: Splits QR Code generation into three flexible phases:
+    * **QR Code Encoding**: Converts raw data into a QR Code matrix (an array of 0s and 1s).
+    * **Command Generation**: Transforms the QR Code matrix into drawing commands.
+    * **Target Rendering**: Outputs the drawing commands to SVG, Canvas images, or even expandable targets like PDF.
+4. **Flexible Layout Configuration**: Provides an API to "draw" the QR Code at any arbitrary position on a Canvas (e.g., freely layout multiple QR Codes on the same Canvas).
+5. **Highly Extensible**: Easily extend with custom styling or replace the underlying QR Code core library.
+6. **Cross-Environment Support**: Native browser support, with out-of-the-box compatibility in Node.js when paired with any Canvas API-compatible third-party library (such as `skia-canvas`).
 
-## 安裝
+## Installation
 
 ```bash
 npm install @ren1244/qr-styling
 ```
 
-## 快速開始
+## Quick Start
 
-### 瀏覽器
+### Browser
 
 ```javascript
 import { QrCode, MixedMode } from "@ren1244/qr-styling/build/browser.esm.js";
 
-// 建立 QR Code
+// Create QR Code
 const qr = new QrCode('Some Input Data', {
-    errorCorrection: 'H', // 錯誤修正等級 ('L', 'M', 'Q', 'H')，預設為 'M'
-    version: 0,           // QR Code 版本 (0 表示自動，或 1-40)，預設為 0
-    enableEci: false,     // 是否啟用 ECI，預設為 false
-    modes: [MixedMode],   // 允許的編碼模式陣列，預設為 [MixedMode]
+    errorCorrection: 'H', // Error correction level ('L', 'M', 'Q', 'H'), default is 'M'
+    version: 0,           // QR Code version (0 for automatic, or 1-40), default is 0
+    enableEci: false,     // Whether to enable ECI, default is false
+    modes: [MixedMode],   // Array of allowed encoding modes, default is [MixedMode]
 });
 
-// 選擇 styling 並渲染
-// 內建樣式："classy"、"classy-rounded"、"dots"、"extra-rounded"、"rounded"、"square"
+// Select styling and render
+// Built-in styles: "classy", "classy-rounded", "dots", "extra-rounded", "rounded", "square"
 const styling = qr.styling('extra-rounded');
 
-// 產生 SVG（邊長 400 px，padding 40px）
+// Generate SVG (400px side length, 40px padding)
 const svgCode = styling.toSvg(400, 40);
 
-// 準備 Canvas
+// Prepare Canvas
 const canvas = document.createElement('canvas');
 canvas.width = 400;
 canvas.height = 400;
 
-// 畫到 Canvas，左上角座標：(50, 50)，邊長 300
+// Draw to Canvas at top-left coordinates: (50, 50), side length 300
 styling.draw(canvas, 50, 50, 300);
 
 ```
 
-### Node.js (搭配 skia-canvas)
+### Node.js (with skia-canvas)
 
 ```javascript
 import { Canvas } from 'skia-canvas';
 import { QrCode } from "@ren1244/qr-styling";
 import fs from 'node:fs';
 
-// 建立 QR Code
+// Create QR Code
 const qr = new QrCode('Some Input Data');
 
-// 直接取得 SVG 內容並輸出
+// Directly get SVG content and write to file
 const svgCode = qr.styling('square').toSvg(400, 40);
 fs.writeFileSync('qrcode.svg', svgCode);
 
-// 準備白色背景的畫布
+// Prepare canvas with a white background
 const cvs = new Canvas(600, 400);
 const ctx = cvs.getContext('2d');
 ctx.fillStyle = '#ffffff';
 ctx.fillRect(0, 0, cvs.width, cvs.height);
 ctx.fillStyle = '#000000';
 
-// 渲染多種內建樣式
+// Render various built-in styles
 qr.styling('classy').draw(cvs, 10, 10, 180);
 qr.styling('classy-rounded').draw(cvs, 210, 10, 180);
 qr.styling('dots').draw(cvs, 410, 10, 180);
@@ -81,33 +81,33 @@ qr.styling('extra-rounded').draw(cvs, 10, 210, 180);
 qr.styling('rounded').draw(cvs, 210, 210, 180);
 qr.styling('square').draw(cvs, 410, 210, 180);
 
-// 輸出為 PNG 檔案
+// Output as a PNG file
 cvs.toFileSync('img.png', { format: 'png' });
 ```
 
-## API 參考
+## API Reference
 
 ### <a name="qrcore-constructor"></a>`new QrCore(data, [option])`
 
-產生 QrCore 實例，負責資料編碼與產生矩陣。
+Creates a `QrCore` instance responsible for data encoding and matrix generation.
 
-* **參數 (Parameters)**:
+* **Parameters**:
 
-| 參數名稱 | 型別 | 必填 | 說明 |
+| Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `data` | `string` | **是** | 要被編碼進 QR Code 的內容（例如網址或文字）。 |
-| `option` | `QrCodeOptions` | 否 | QR Code 選項。 |
+| `data` | `string` | **Yes** | The content to be encoded into the QR Code (e.g., URL or text). |
+| `option` | `QrCodeOptions` | No | QR Code options. |
 
-* **QrCodeOptions 屬性說明**:
+* **QrCodeOptions Properties**:
 
-| 屬性名稱 | 型別 | 預設值 | 說明 |
+| Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `errorCorrection` | `"L" \| "M" \| "Q" \| "H"` | `"M"` | 錯誤修正等級 (`L`: 7%, `M`: 15%, `Q`: 25%, `H`: 30%)。 |
-| `version` | `number` | `0` | QR Code 版本（`0` 表示自動偵測，或指定 `1` 至 `40`）。 |
-| `enableEci` | `boolean` | `false` | 是否啟用 ECI (Extended Channel Interpretation)。 |
-| `modes` | `(AlphanumericMode \| ByteMode \| KanjiMode \| NumericMode \| MixedMode)[]` | `[MixedMode]` | 允許的編碼模式陣列。 |
+| `errorCorrection` | `"L" \| "M" \| "Q" \| "H"` | `"M"` | Error correction level(`L`: 7%, `M`: 15%, `Q`: 25%, `H`: 30%). |
+| `version` | `number` | `0` | QR Code version (`0` for auto-detection, or specify `1` to `40`). |
+| `enableEci` | `boolean` | `false` | Whether to enable ECI (Extended Channel Interpretation). |
+| `modes` | `(AlphanumericMode \| ByteMode \| KanjiMode \| NumericMode \| MixedMode)[]` | `[MixedMode]` | Array of allowed encoding modes. |
 
-* **範例 (Example)**
+* **Example**
 
 ```javascript
 import { QrCore, AlphanumericMode, NumericMode, ByteMode } from '@ren1244/qr-styling';
@@ -120,37 +120,37 @@ const core = new QrCore("https://example.com", {
 
 ### `QrCore.prototype.getSize()`
 
-取得此 QR Code 行(列)的格子數(不含靜默區域)
+Gets the number of modules per row/column for this QR Code (excluding quiet zones).
 
-* **參數**: 無
-* **回傳值**: `number` - 模組的尺寸大小（例如版本 1 為 21）
+* **Parameters**: None
+* **Returns**: `number` - The dimension size of the modules (e.g., 21 for Version 1).
 
 ### `QrCore.prototype.getPoint(row, col)`
 
-取得某座標點的格子是黑色還是白色。
+Gets whether a specific coordinate point is a dark or light module.
 
-* **參數**:
+* **Parameters**:
 
-| 參數名稱 | 型別 | 必填 | 說明 |
+| Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `row` | `number` | **是** | 第幾列（從 `0` 開始）。 |
-| `col` | `number` | **是** | 第幾行（從 `0` 開始）。 |
+| `row` | `number` | **Yes** | The row index (starting from 0). |
+| `col` | `number` | **Yes** | The column index (starting from 0). |
 
-* **回傳值**: `0 \| 1 \| null` - 如果是黑色回傳 `1`，白色回傳 `0`，超出範圍則回傳 `null`。
+* **Returns**: `0 \| 1 \| null` - Returns `1` if dark, `0` if light, or `null` if out of bounds.
 
 ### `QrCore.prototype.getMaskVersion()`
 
-* **參數**: 無
-* **回傳值**: `number|null` - 採用的 mask 版本
+* **Parameters**: None
+* **Returns**: `number|null` - The applied mask version.
 
 ----
 
 ### `new QrCode(data, [option])`
 
-產生 QrCode 實例（其核心為 QrCore）。
+Creates a `QrCode` instance (whose core is powered by `QrCore`).
 
-* **參數**: 參數與 `QrCore` 相同，請參考 [`new QrCore(data, [option])`](#qrcore-constructor)。
-* **範例**:
+* **Parameters**: Same as `QrCore`, please refer to [`new QrCore(data, [option])`](#qrcore-constructor).
+* **Example**:
 
 ```javascript
 import { QrCode } from '@ren1244/qr-styling';
@@ -159,72 +159,72 @@ const qr = new QrCode("https://example.com", {
 });
 ```
 
-### `QrCode.registryStyling(styling, stylingClass)`
+### `QrCode.registryStyling(styling, stylingClass)` (inheriting from `QrBase`)
 
-註冊一個自訂樣式（繼承自 `QrBase`）。
+Registers a custom style.
 
-* **參數**:
+* **Parameters**:
 
-| 參數名稱 | 型別 | 必填 | 說明 |
+| Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `styling` | `string` | **是** | 自訂樣式名稱。 |
-| `stylingClass` | `StylingBase` | **是** | 繼承 `StylingBase` 並覆寫 `getCommands` 方法的類別。 |
+| `styling` | `string` | **Yes** | The custom style name. |
+| `stylingClass` | `StylingBase` | **Yes** | A class inheriting from `StylingBase` that overrides the `getCommands` method. |
 
-### `QrCode.prototype.styling(styling)`
+### `QrCode.prototype.styling(styling)` (inheriting from `QrBase`)
 
-取得 QR Code 的樣式（繼承自 `QrBase`）。
+Gets the styling instance for the QR Code.
 
-* **參數**:
+* **Parameters**:
 
-| 參數名稱 | 型別 | 必填 | 說明 |
+| Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `styling` | `"classy" \| "classy-rounded" \| "dots" \| "extra-rounded" \| "rounded" \| "square" \| string` | **是** | 內建或自訂的樣式名稱。 |
+| `styling` | `"classy" \| "classy-rounded" \| "dots" \| "extra-rounded" \| "rounded" \| "square" \| string` | **Yes** | Built-in or custom style name. |
 
-* **回傳值**: `StylingBase` - 回傳繼承自 StylingBase 的樣式實例
+* **Returns**: `StylingBase` - Returns a style instance extending `StylingBase`.
 
 ----
 
 ### `StylingBase.prototype.getD()`
 
-取得 SVG 中 path 的 d 屬性所需的資料。
+Gets the data required for the `d` attribute of an SVG path element.
 
-* **參數**: 無
-* **回傳值**: `string`
+* **Parameters**: None
+* **Returns**: `string`
 
 ### `StylingBase.prototype.toSvg(edge, padding, quietFlag)`
 
-取得 SVG 內容（從 `<svg ...` 到 `</svg>`）。
+Gets the SVG content (from `<svg` ... to `</svg>`).
 
-* **參數**: 
+* **Parameters**: 
 
-| 參數名稱 | 型別 | 必填 | 說明 |
+| Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `edge` | `number` | **是** | SVG 圖片邊長（px）。 |
-| `padding` | `number` | **是** | 白邊大小，單位為 **px** 或**格子數**，由 `quietFlag` 決定 |
-| `quietFlag` | `boolean` | 否 | 若為 `true`，`padding` 為**格子數**，否則為 **px** |
+| `edge` | `number` | **Yes** | The side length of the SVG image in pixels (px). |
+| `padding` | `number` | **Yes** | The padding size, in either **pixels (px)** or **number of modules**, determined by `quietFlag`. |
+| `quietFlag` | `boolean` | No | If `true`, `padding` is measured in **number of modules**; otherwise, in **pixels (px)**. |
 
-* **回傳值**: `string`
+* **Returns**: `string`
 
 ### `StylingBase.prototype.draw(canvas, x, y, edgeSize)`
 
-畫此樣式到 canvas 某處（其顏色與座標系統受呼叫前的設定影響）。
+Draws this style onto a canvas at a given location (its color and coordinate system are affected by prior configurations).
 
-* **參數**: 
+* **Parameters**: 
 
-| 參數名稱 | 型別 | 必填 | 說明 |
+| Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `canvas` | `HtmlCanvasElement` | **是** | 與 `HtmlCanvasElement` 相容的 `Canvas` 物件 |
-| `x` | `number` | **是** | x 座標 |
-| `y` | `number` | **是** | y 座標 |
-| `edgeSize` | `number` | **是** | QrCode 邊長（不含靜默區域） |
+| `canvas` | `HtmlCanvasElement` | **Yes** | A `Canvas` object compatible with `HtmlCanvasElement`. |
+| `x` | `number` | **Yes** | The x-coordinate. |
+| `y` | `number` | **Yes** | The y-coordinate. |
+| `edgeSize` | `number` | **Yes** | The side length of the QR Code (excluding quiet zones). |
 
-* **回傳值**: 無
+* **Returns**: None
 
-## 進階使用
+## Advanced Usage
 
-### 新增自訂樣式設計
+### Creating Custom Styles
 
-透過繼承 `StylingBase` 來建立自己的樣式，並用 `QrCode.registryStyling` 進行註冊：
+Create your own style by extending `StylingBase` and registering it via `QrCode.registryStyling`:
 
 ```javascript
 import { QrCode, StylingBase } from "@ren1244/qr-styling";
@@ -239,7 +239,7 @@ class OldSquare extends StylingBase {
         for (let r = 0; r < this.size; ++r) {
             for (let c = 0; c < this.size; ++c) {
                 if (this.data[r * this.size + c]) {
-                    // 目前支援 'M', 'L', 'C', 'Z' 繪製路徑
+                    // Currently supports 'M', 'L', 'C', 'Z' for drawing paths
                     commandArray.push(['M', { x: c, y: r }]);
                     commandArray.push(['L', { x: c + 1, y: r }]);
                     commandArray.push(['L', { x: c + 1, y: r + 1 }]);
@@ -252,22 +252,22 @@ class OldSquare extends StylingBase {
     }
 }
 
-// 註冊樣式
+// Register the custom style
 QrCode.registryStyling('old-square', OldSquare);
 
-// 使用自訂樣式
+// Use the custom style
 const svgCode = new QrCode('test string').styling('old-square').toSvg(400, 40);
 ```
 
-### 替換核心
+### Replacing the Core Library
 
-如果想改用第三方 QR Code 核心，只需繼承 `QrBase` 並覆寫 `create` 靜態方法：
+If you prefer to use a third-party QR Code core library, simply extend `QrBase` and override the `create` static method:
 
 ```javascript
 import qrcode from "qrcode-generator";
 import { QrBase } from "@ren1244/qr-styling";
 
-// 設定 UTF-8 編碼轉換
+// Setup UTF-8 encoding conversion
 qrcode.stringToBytes = (() => {
     let enc = new TextEncoder();
     return function (s) {
@@ -291,7 +291,7 @@ class CustomQrCode extends QrBase {
     }
 }
 
-// 使用方式相同
+// Usage remains the same
 const qr = new CustomQrCode('Some Input Data');
 const svgCode = qr.styling('square').toSvg(400, 40);
 ```
