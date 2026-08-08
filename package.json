@@ -1,7 +1,15 @@
 {
   "name": "@ren1244/qr-styling",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A framework for styling QR Codes",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ren1244/qr-styling.git"
+  },
+  "homepage": "https://github.com/ren1244/qr-styling#readme",
+  "bugs": {
+    "url": "https://github.com/ren1244/qr-styling/issues"
+  },
   "exports": {
     "import": "./src/index.js",
     "require": "./build/index.cjs"
