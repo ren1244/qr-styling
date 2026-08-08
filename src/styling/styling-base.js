@@ -1,4 +1,4 @@
-import { QrPath } from '@ren1244/qr-path';
+import { qrPath } from './lib/qr-path.js';
 
 function num2str(num) {
     return num.toFixed(3).replace(/\.?0+$/, '');
@@ -12,7 +12,7 @@ class StylingBase {
 
     getPaths() {
         const { size, data } = this;
-        return QrPath(size, size, (x, y) => !!data[y * size + x]);
+        return qrPath(data, size, size);
     }
 
     getCommands() {
@@ -39,7 +39,7 @@ class StylingBase {
         const cmds = this.getCommands();
         const size = this.size;
         const d = this.getD(cmds);
-        if(quietFlag) {
+        if (quietFlag) {
             padding *= edge / (size + padding * 2);
         }
         const innerEdge = edge - padding * 2;
