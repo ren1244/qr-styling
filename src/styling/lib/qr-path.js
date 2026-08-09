@@ -1,4 +1,11 @@
-function qrPath(mtx, width, height) {
+/**
+ * @param {array} mtx 
+ * @param {number} width 
+ * @param {number} height 
+ * @param {?boolean} rawFlag if true, return number[][]
+ * @returns {number[][]|{x:number,y:number}[]}
+ */
+function qrPath(mtx, width, height, rawFlag) {
     /**
      * bit 0-3: 儲存前往方向
      * bit 4 以上：群組 ID
@@ -64,17 +71,11 @@ function qrPath(mtx, width, height) {
             }
         }
 
-        result = result.map(v => {
-            return {
-                x: v % (width + 1),
-                y: v / (width + 1) >>> 0
-            };
-        });
-
         const p0 = result[0];
         const p1 = result[1];
         const p2 = result[result.length - 1];
-        const crossProduct = (p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x);
+        const divisor = width + 1;
+        const crossProduct = (p1 % divisor - p0 % divisor) * ((p2 / divisor >>> 0) - (p0 / divisor >>> 0)) - ((p1 / divisor >>> 0) - (p0 / divisor >>> 0)) * (p2 % divisor - p0 % divisor);
         if (crossProduct === 0) {
             result[0] = p2;
             --result.length;
@@ -139,6 +140,19 @@ function qrPath(mtx, width, height) {
             }
         }
     }
+
+    if (!rawFlag) {
+        const divisor = width + 1;
+        for (let path of counters) {
+            for (let i = path.length - 1; i >= 0; --i) {
+                path[i] = {
+                    x: path[i] % divisor,
+                    y: path[i] / divisor >>> 0,
+                };
+            }
+        }
+    }
+
     return counters;
 }
 

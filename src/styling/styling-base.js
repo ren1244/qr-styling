@@ -36,9 +36,8 @@ class StylingBase {
     }
 
     toSvg(edge, padding, quietFlag) {
-        const cmds = this.getCommands();
         const size = this.size;
-        const d = this.getD(cmds);
+        const d = this.getD();
         if (quietFlag) {
             padding *= edge / (size + padding * 2);
         }
