@@ -273,6 +273,7 @@ function getRemainderBits(version) {
  * @property {number} [version] - QR Code 版本 (0 表示自動，或 1-40)，預設為 0
  * @property {boolean} [enableEci] - 是否啟用 ECI (Extended Channel Interpretation)，預設為 false
  * @property {Mode[]} [modes] - 允許的編碼模式陣列，預設為 [MixedMode]
+ * @property {number} [mask] - 使用 mask 版本（0-7），未設定則為自動
  */
 
 const optionConfig = {
@@ -319,6 +320,14 @@ const optionConfig = {
                 }
             }
         }
+    },
+    mask: {
+        value: -1,
+        valid(x) {
+            if (!Number.isInteger(x) || x < -1 || x > 7) {
+                throw `option.mask must be -1 - 7`;
+            }
+        }
     }
 };
 
@@ -329,8 +338,8 @@ class QrCode {
      */
     constructor(data, option = {}) {
         // data
-        if (typeof data !== 'string') {
-            throw `data must be string`;
+        if (typeof data !== 'string' && !(data instanceof Uint8Array)) {
+            throw `data must be string or Uint8Array`;
         }
         this.data = data;
 
@@ -342,15 +351,16 @@ class QrCode {
         }
 
         // 計算 version 與 mode
-        const { version: minVersion, mode } = this.minVersionAndMode();
-        this.mode = mode;
-        if (this.version) {
-            if (this.version < minVersion) {
-                throw `版本 ${version} 容量不夠`;
+        if (typeof data === 'string') {
+            const { version: minVersion, mode } = this.minVersionAndMode();
+            this.mode = mode;
+            if (this.version) {
+                if (this.version < minVersion) {
+                    throw `版本 ${version} 容量不夠`;
+                }
+            } else {
+                this.version = minVersion;
             }
-            this.version = version;
-        } else {
-            this.version = minVersion;
         }
 
         // 寫入資料
@@ -363,7 +373,13 @@ class QrCode {
             blockInfo[0],
             getRemainderBits(this.version)
         );
-        this.mode.write(this.buffer);
+        if (this.data instanceof Uint8Array) {
+            for (let x of this.data) {
+                this.buffer.appendBits(x, 8);
+            }
+        } else {
+            this.mode.write(this.buffer);
+        }
         this.buffer.terminator();
         this.buffer.padding();
         this.buffer.errorCorrection();
@@ -585,7 +601,7 @@ class QrCode {
      * @returns {0|1|null} 如果是黑色回傳 1，白色回傳 0，超出範圍回傳 null
      */
     getPoint(row, col) {
-        return this.matrix.getPoint(row, col, this.matrix.getBestMaskVersion());
+        return this.matrix.getPoint(row, col, this.mask < 0 ? this.matrix.getBestMaskVersion() : this.mask);
     }
 
     /**
@@ -593,7 +609,7 @@ class QrCode {
      * @returns {number|null}
      */
     getMaskVersion() {
-        return this.matrix.getBestMaskVersion();
+        return this.mask < 0 ? this.matrix.getBestMaskVersion() : this.mask;
     }
 }
 
