@@ -348,7 +348,6 @@ class QrCode {
             if (this.version < minVersion) {
                 throw `版本 ${version} 容量不夠`;
             }
-            this.version = version;
         } else {
             this.version = minVersion;
         }
