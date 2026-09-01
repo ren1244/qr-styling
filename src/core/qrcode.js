@@ -284,6 +284,14 @@ const optionConfig = {
             }
         }
     },
+    autoECLevel: {
+        value: false,
+        valid(x) {
+            if (x !== true && x !== false) {
+                throw `option.autoECLevel must be true or false`;
+            }
+        }
+    },
     version: {
         value: 0,
         valid(x) {
@@ -352,6 +360,21 @@ class QrCode {
             this.version = minVersion;
         }
 
+        // 在現有 version 下，自動升級容錯率
+        if (this.autoECLevel) {
+            const ecList = ['L', 'M', 'Q', 'H'];
+            let ecIdx = ecList.indexOf(this.errorCorrection);
+            if (ecIdx >= 0) {
+                while (++ecIdx < ecList.length) {
+                    const ecLevel = ecList[ecIdx];
+                    if (!this.validVersion(this.version, this.mode, ecLevel)) {
+                        break;
+                    }
+                    this.errorCorrection = ecLevel;
+                }
+            }
+        }
+
         // 寫入資料
         let blockInfo = dict[this.errorCorrection][this.version];
         this.buffer = new BitBuffer(
@@ -400,10 +423,11 @@ class QrCode {
      * 驗證某版本是否可使用
      * @param {number} version 版本
      * @param {NumericMode|AlphanumericMode|ByteMode|KanjiMode} mode mode 實例
+     * @param {?string} errorCorrection 錯誤修正等級：'L', 'M', 'Q', 'H'
      * @returns {boolean}
      */
-    validVersion(version, mode) {
-        let info = dict[this.errorCorrection][version];
+    validVersion(version, mode, errorCorrection) {
+        let info = dict[errorCorrection || this.errorCorrection][version];
         let size = info[2] * info[1];
         if (info.length >= 5) {
             size += info[4] * info[3];

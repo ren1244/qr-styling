@@ -33,6 +33,7 @@ const qr = new QrCode('Some Input Data', {
     version: 0,           // QR Code version (0 for automatic, or 1-40), default is 0
     enableEci: false,     // Whether to enable ECI, default is false
     modes: [MixedMode],   // Array of allowed encoding modes, default is [MixedMode]
+    autoECLevel: true,    // As long as the version remains unchanged, automatically upgrade the error correction level. Default is false
 });
 
 // Select styling and render
@@ -102,10 +103,11 @@ Creates a `QrCore` instance responsible for data encoding and matrix generation.
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `errorCorrection` | `"L" \| "M" \| "Q" \| "H"` | `"M"` | Error correction level(`L`: 7%, `M`: 15%, `Q`: 25%, `H`: 30%). |
+| `errorCorrection` | `"L" \| "M" \| "Q" \| "H"` | `"M"` | Error correction level (`L`: 7%, `M`: 15%, `Q`: 25%, `H`: 30%). |
 | `version` | `number` | `0` | QR Code version (`0` for auto-detection, or specify `1` to `40`). |
 | `enableEci` | `boolean` | `false` | Whether to enable ECI (Extended Channel Interpretation). |
 | `modes` | `(AlphanumericMode \| ByteMode \| KanjiMode \| NumericMode \| MixedMode)[]` | `[MixedMode]` | Array of allowed encoding modes. |
+| `autoECLevel` | `boolean` | `false` | As long as the version remains unchanged, automatically upgrade the error correction level. |
 
 * **Example**
 
@@ -213,7 +215,7 @@ Draws this style onto a canvas at a given location (its color and coordinate sys
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `canvas` | `HtmlCanvasElement` | **Yes** | A `Canvas` object compatible with `HtmlCanvasElement`. |
+| `canvas` | `HTMLCanvasElement` | **Yes** | A `Canvas` object compatible with `HTMLCanvasElement`. |
 | `x` | `number` | **Yes** | The x-coordinate. |
 | `y` | `number` | **Yes** | The y-coordinate. |
 | `edgeSize` | `number` | **Yes** | The side length of the QR Code (excluding quiet zones). |
