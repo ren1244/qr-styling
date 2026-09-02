@@ -1,9 +1,19 @@
 import BitBuffer from "../bit-buffer.js";
 
+/**
+ * 基本的 Byte 模式
+ * 
+ * 做 encoding 時繼承此類別並複寫:
+ * 1. static ECI
+ * 2. static create
+ */
 class ByteMode {
+    /** @type {?number} */
+    static ECI = null;
+
     /**
      * 取得 Mode 物件
-     * @param {string} data 
+     * @param {Uint8Array} data 
      * @param {number} version 版本
      * @param {boolean} enableEci 是否開啟 eci
      * @returns {?ByteMode} 若為合理資料回傳 Mode 物件，否則回傳 null
@@ -43,7 +53,7 @@ class ByteMode {
     }
 
     constructor(data, version, enableEci) {
-        this.data = new TextEncoder().encode(data);
+        this.data = data;
         this.countIndicatorLength = ByteMode.getCharCountIndicatorLength(version);
         this.enableEci = enableEci;
     }
@@ -62,8 +72,18 @@ class ByteMode {
      */
     write(bin) {
         // eci 26
-        if (this.enableEci) {
-            bin.appendBits(0x71a, 12);
+        if (this.enableEci && this.constructor.ECI !== null) {
+            const eci = this.constructor.ECI;
+            bin.appendBits(7, 4);
+            if(eci < 0x80) {
+                bin.appendBits(eci, 8);
+            } else if(eci < 0x4000) {
+                bin.appendBits(eci, 16);
+            } else if(eci < 1000000) {
+                bin.appendBits(eci, 24);
+            } else {
+                throw 'bad eci: ' + eci;
+            }
         }
 
         // mode indicator

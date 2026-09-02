@@ -1,12 +1,12 @@
 import AlphanumericMode from './mode/alphanumeric.js';
-import ByteMode from './mode/byte.js';
+import Utf8ByteMode from './mode/utf8.js';
 import KanjiMode from './mode/kanji.js';
 import NumericMode from './mode/numeric.js';
 import MixedMode from './mode/mixed.js';
 import BitBuffer from './bit-buffer.js';
 import Matrix from './matrix.js';
 
-/** @typedef {typeof AlphanumericMode|typeof ByteMode|typeof KanjiMode|typeof NumericMode|typeof MixedMode} Mode */
+/** @typedef {typeof AlphanumericMode|typeof Utf8ByteMode|typeof KanjiMode|typeof NumericMode|typeof MixedMode} Mode */
 
 /**
  * 依「容錯等級」與「版本」取得其相關資訊，內容如下：
@@ -311,14 +311,14 @@ const optionConfig = {
     modes: {
         value: [MixedMode],
         valid(x) {
-            const errMsg = `option.modes must be array of AlphanumericMode, ByteMode, KanjiMode, NumericMode or MixedMode`;
+            const errMsg = `option.modes must be array of AlphanumericMode, Utf8ByteMode, KanjiMode, NumericMode or MixedMode`;
             if (!Array.isArray(x)) {
                 throw errMsg;
             }
             for (let m of x) {
                 if (
                     m !== AlphanumericMode &&
-                    m !== ByteMode &&
+                    m !== Utf8ByteMode &&
                     m !== KanjiMode &&
                     m !== NumericMode &&
                     m !== MixedMode
@@ -396,7 +396,7 @@ class QrCode {
     /**
      * 取得某版本下，能產生最短長度的 mode 實例
      * @param {number} version 版本
-     * @returns {NumericMode|AlphanumericMode|ByteMode|KanjiMode|null}
+     * @returns {NumericMode|AlphanumericMode|Utf8ByteMode|KanjiMode|MixedMode|null}
      */
     minLenMode(version) {
         let minLen = null;
@@ -422,7 +422,7 @@ class QrCode {
     /**
      * 驗證某版本是否可使用
      * @param {number} version 版本
-     * @param {NumericMode|AlphanumericMode|ByteMode|KanjiMode} mode mode 實例
+     * @param {NumericMode|AlphanumericMode|Utf8ByteMode|KanjiMode|MixedMode} mode mode 實例
      * @param {?string} errorCorrection 錯誤修正等級：'L', 'M', 'Q', 'H'
      * @returns {boolean}
      */
@@ -437,7 +437,7 @@ class QrCode {
 
     /**
      * 自動選擇最低版本與 mode
-     * @returns {{version: number, mode: NumericMode|AlphanumericMode|ByteMode|KanjiMode}}
+     * @returns {{version: number, mode: NumericMode|AlphanumericMode|Utf8ByteMode|KanjiMode|MixedMode}}
      */
     minVersionAndMode() {
         // version 1 ~ 9, 10 ~ 26, 27 ~ 40 每段算出來的長度都是相同的
