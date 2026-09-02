@@ -336,22 +336,54 @@ class QrCode {
      * @param {QrCodeOptions} option 
      */
     constructor(data, option = {}) {
-        // data
-        if (typeof data !== 'string') {
-            throw `data must be string`;
-        }
-        this.data = data;
-
-        // option
+        // options
         for (let key in optionConfig) {
             const { value: defaultValue, valid } = optionConfig[key];
             this[key] = option[key] !== undefined ? option[key] : defaultValue;
             valid(this[key]);
         }
 
-        // 計算 version 與 mode
-        const { version: minVersion, mode } = this.minVersionAndMode();
-        this.mode = mode;
+        // data
+        let minVersion, maxVersion;
+        if (typeof data === 'string') {
+            // 計算 version 與 mode
+            let mode;
+            if (mode = this.getMinLengthMode(data, 9)) {
+                minVersion = 1;
+                maxVersion = 9;
+            } else if (mode = this.getMinLengthMode(data, 26)) {
+                minVersion = 10;
+                maxVersion = 26;
+            } else if (mode = this.getMinLengthMode(data, 40)) {
+                minVersion = 27;
+                maxVersion = 40;
+            } else {
+                throw 'data is too long';
+            }
+            this.data = [mode];
+        } else if (Array.isArray(data)) {
+            // 轉為 mode 實例
+            let arr;
+            if ((arr = this.getModeArray(data, 9)) !== null) {
+                minVersion = 1;
+                maxVersion = 9;
+            } else if ((arr = this.getModeArray(data, 26)) !== null) {
+                minVersion = 10;
+                maxVersion = 26;
+            } else if ((arr = this.getModeArray(data, 40)) !== null) {
+                minVersion = 27;
+                maxVersion = 40;
+            } else {
+                throw 'data is too long';
+            }
+            this.data = arr;
+        }
+
+        // 計算總長度
+        const totalLength = this.data.reduce((s, mode) => s + mode.getLength(), 0);
+
+        // 找最低版本
+        minVersion = QrCode.getMinVersion(totalLength, minVersion, maxVersion, this.errorCorrection);
         if (this.version) {
             if (this.version < minVersion) {
                 throw `版本 ${version} 容量不夠`;
@@ -367,7 +399,7 @@ class QrCode {
             if (ecIdx >= 0) {
                 while (++ecIdx < ecList.length) {
                     const ecLevel = ecList[ecIdx];
-                    if (!this.validVersion(this.version, this.mode, ecLevel)) {
+                    if (totalLength > QrCode.getCapacity(this.version, ecLevel)) {
                         break;
                     }
                     this.errorCorrection = ecLevel;
@@ -385,7 +417,9 @@ class QrCode {
             blockInfo[0],
             getRemainderBits(this.version)
         );
-        this.mode.write(this.buffer);
+        for (let mode of this.data) {
+            mode.write(this.buffer);
+        }
         this.buffer.terminator();
         this.buffer.padding();
         this.buffer.errorCorrection();
@@ -394,18 +428,49 @@ class QrCode {
     }
 
     /**
+     * 取得某 version, errorCorrection 所能乘載的容量
+     * @param {number} version 版本
+     * @param {string} errorCorrection 錯誤修正等級：'L', 'M', 'Q', 'H'
+     * @returns {number} 容量(bits)
+     */
+    static getCapacity(version, errorCorrection) {
+        const info = dict[errorCorrection][version];
+        return (info.length < 5 ? info[2] * info[1] : info[2] * info[1] + info[4] * info[3]) << 3;
+    }
+
+    static getMinVersion(bitLength, minVersion, maxVersion, errorCorrection) {
+        if (bitLength > QrCode.getCapacity(maxVersion, errorCorrection)) {
+            return null;
+        }
+        if (bitLength <= QrCode.getCapacity(minVersion, errorCorrection)) {
+            return minVersion;
+        }
+        while (minVersion + 1 < maxVersion) {
+            const version = (minVersion + maxVersion) >>> 1;
+            if (bitLength <= QrCode.getCapacity(version, errorCorrection)) {
+                maxVersion = version;
+            } else {
+                minVersion = version;
+            }
+        }
+        return maxVersion;
+    }
+
+    /**
      * 取得某版本下，能產生最短長度的 mode 實例
+     * 版本 1-9, 10-26, 27-40 共三個區間，每個區間產生的結果永遠都會相同
+     * @param {string} data 文字資料
      * @param {number} version 版本
      * @returns {NumericMode|AlphanumericMode|Utf8ByteMode|KanjiMode|MixedMode|null}
      */
-    minLenMode(version) {
+    getMinLengthMode(data, version) {
         let minLen = null;
         let minInst = null;
-        for (let i = 0; i < this.modes.length; ++i) {
-            let inst = this.modes[i].create(this.data, version, this.enableEci);
+        for (let mode of this.modes) {
+            let inst = mode.create(data, version, this.enableEci);
             if (inst !== null) {
                 let len = inst.getLength();
-                if (minInst) {
+                if (minInst !== null) {
                     if (len < minLen) {
                         minLen = len;
                         minInst = inst;
@@ -416,58 +481,22 @@ class QrCode {
                 }
             }
         }
-        return minInst;
+        return minLen <= QrCode.getCapacity(version, this.errorCorrection) ? minInst : null;
     }
 
-    /**
-     * 驗證某版本是否可使用
-     * @param {number} version 版本
-     * @param {NumericMode|AlphanumericMode|Utf8ByteMode|KanjiMode|MixedMode} mode mode 實例
-     * @param {?string} errorCorrection 錯誤修正等級：'L', 'M', 'Q', 'H'
-     * @returns {boolean}
-     */
-    validVersion(version, mode, errorCorrection) {
-        let info = dict[errorCorrection || this.errorCorrection][version];
-        let size = info[2] * info[1];
-        if (info.length >= 5) {
-            size += info[4] * info[3];
+    getModeArray(arr, version) {
+        const result = [];
+        let totalLength = 0;
+        for (let o of arr) {
+            const { mode, data } = o;
+            const inst = mode.create(data, version, this.enableEci);
+            if (inst === null) {
+                throw 'invalid Mode data.';
+            }
+            result.push(inst);
+            totalLength += inst.getLength();
         }
-        return mode !== null && mode.getLength() <= size * 8;
-    }
-
-    /**
-     * 自動選擇最低版本與 mode
-     * @returns {{version: number, mode: NumericMode|AlphanumericMode|Utf8ByteMode|KanjiMode|MixedMode}}
-     */
-    minVersionAndMode() {
-        // version 1 ~ 9, 10 ~ 26, 27 ~ 40 每段算出來的長度都是相同的
-        let testVersion = [[1, 9], [10, 26], [27, 40]];
-        let mode = null;
-        for (let versionSegment of testVersion) {
-            mode = this.minLenMode(versionSegment[1]);
-            if (mode === null) {
-                throw '無法找到合適的Mode';
-            }
-            // 二分搜尋法找最低版本
-            let [minVer, maxVer] = versionSegment;
-            // let version in (minVer, maxVer]
-            if (!this.validVersion(maxVer, mode)) {
-                continue;
-            }
-            if (this.validVersion(minVer, mode)) {
-                return { version: minVer, mode };
-            }
-            while (minVer + 1 < maxVer) {
-                let v = (minVer + maxVer) >>> 1;
-                if (this.validVersion(v, mode)) {
-                    maxVer = v;
-                } else {
-                    minVer = v;
-                }
-            }
-            return { version: maxVer, mode };
-        }
-        throw '無法找到合適的版本';
+        return totalLength <= QrCode.getCapacity(version, this.errorCorrection) ? result : null;
     }
 
     /**
