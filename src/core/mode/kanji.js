@@ -115,6 +115,19 @@ class KanjiMode {
     getName() {
         return 'Kanji';
     }
+
+    /**
+     * 把 data 資訊寫入 segments
+     * @param {array} segments 
+     */
+    dumpData(segments) {
+        const buffer = new ArrayBuffer(this.data.length << 1);
+        const dv = new DataView(buffer);
+        for (let i = 0; i < this.data.length; ++i) {
+            dv.setUint16(i << 1, this.data[i], false);
+        }
+        segments.push({ mode: 'kanji', data: new TextDecoder('shift-jis').decode(buffer) });
+    }
 }
 
 export default KanjiMode;

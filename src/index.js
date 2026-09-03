@@ -18,7 +18,15 @@ class QrCode extends QrBase {
                 arr[r * size + c] = qr.getPoint(r, c);
             }
         }
-        return { size, data: arr };
+        return {
+            size,
+            data: arr,
+            detail: {
+                getDetail() {
+                    return qr.getDetail();
+                }
+            }
+        };
     }
 }
 

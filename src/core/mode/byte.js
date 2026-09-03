@@ -75,11 +75,11 @@ class ByteMode {
         if (this.enableEci && this.constructor.ECI !== null) {
             const eci = this.constructor.ECI;
             bin.appendBits(7, 4);
-            if(eci < 0x80) {
+            if (eci < 0x80) {
                 bin.appendBits(eci, 8);
-            } else if(eci < 0x4000) {
+            } else if (eci < 0x4000) {
                 bin.appendBits(eci, 16);
-            } else if(eci < 1000000) {
+            } else if (eci < 1000000) {
                 bin.appendBits(eci, 24);
             } else {
                 throw 'bad eci: ' + eci;
@@ -104,6 +104,17 @@ class ByteMode {
      */
     getName() {
         return 'Byte';
+    }
+
+    /**
+     * 把 data 資訊寫入 segments
+     * @param {array} segments 
+     */
+    dumpData(segments) {
+        if (this.enableEci && this.constructor.ECI) {
+            segments.push({ mode: 'eci', data: this.constructor.ECI });
+        }
+        segments.push({ mode: 'byte', data: this.data });
     }
 }
 

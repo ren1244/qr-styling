@@ -145,6 +145,20 @@ Gets whether a specific coordinate point is a dark or light module.
 * **Parameters**: None
 * **Returns**: `number|null` - The applied mask version.
 
+### `QrCore.prototype.getDetail()`
+
+* **Parameters**: None
+* **Returns**: `object` - An object containing the QR Code encoding configurations and raw byte segments.
+
+#### Return Value Structure
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `version` | `number` | QR Code version number (`1` – `40`). |
+| `errorCorrectionLevel` | `string` | Error correction level (`'L'`, `'M'`, `'Q'`, `'H'`). |
+| `mask` | `number` | The applied mask pattern reference (`0` – `7`). |
+| `segments` | `{ mode: string, data: string \| Uint8Array  \| number }` | List of encoded data segments . Possible `mode` values: `'eci'`, `'alphanumeric'`, `'byte'`, `'kanji'`, `'numeric'`. |
+
 ----
 
 ### `new QrCode(data, [option])`
@@ -160,6 +174,23 @@ const qr = new QrCode("https://example.com", {
     errorCorrection: "H",
 });
 ```
+
+#### Instance Properties
+
+##### `size`
+
+* **Type**: `number`
+* **Description**: The grid size (number of modules per side) of the QR Code.
+
+##### `data`
+
+* **Type**: `Uint8Array`
+* **Description**: The module grid data, stored as a `Uint8Array` of length `size * size` where each element represents a black or white module.
+
+##### `detail`
+
+* **Type**: `{ getDetail: () => object }`
+* **Description**: An object containing low-level encoding details. Call `qr.detail.getDetail()` to retrieve the breakdown (returns the same output as `QrCore.prototype.getDetail()` ).
 
 ### `QrCode.registryStyling(styling, stylingClass)` (inheriting from `QrBase`)
 

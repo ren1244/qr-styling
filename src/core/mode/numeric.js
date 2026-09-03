@@ -123,6 +123,14 @@ class NumericMode {
     getName() {
         return 'Numeric';
     }
+
+    /**
+     * 把 data 資訊寫入 segments
+     * @param {array} segments 
+     */
+    dumpData(segments) {
+        segments.push({ mode: 'numeric', data: this.data });
+    }
 }
 
 export default NumericMode;

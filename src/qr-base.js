@@ -35,6 +35,9 @@ class QrBase {
         const qr = this.constructor.create(...args);
         this.data = qr.data;
         this.size = qr.size;
+        if (qr.detail) {
+            this.detail = qr.detail;
+        }
     }
 
     styling(styling) {

@@ -647,6 +647,23 @@ class QrCode {
     getMaskVersion() {
         return this.matrix.getBestMaskVersion();
     }
+
+    /**
+     * 取得當前 Qr Code 的詳細資料
+     * @returns {{version:number, errorCorrectionLevel: string, mask: number, segments: array}}
+     */
+    getDetail() {
+        const segments = [];
+        for (let mode of this.data) {
+            mode.dumpData(segments);
+        }
+        return {
+            version: this.version,
+            errorCorrectionLevel: this.errorCorrection,
+            mask: this.getMaskVersion(),
+            segments,
+        };
+    }
 }
 
 export default QrCode;
