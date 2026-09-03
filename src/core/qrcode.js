@@ -386,7 +386,7 @@ class QrCode {
         minVersion = QrCode.getMinVersion(totalLength, minVersion, maxVersion, this.errorCorrection);
         if (this.version) {
             if (this.version < minVersion) {
-                throw `版本 ${version} 容量不夠`;
+                throw `版本 ${this.version} 容量不夠`;
             }
         } else {
             this.version = minVersion;
