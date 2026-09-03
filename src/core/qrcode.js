@@ -379,9 +379,9 @@ class QrCode {
             }
         } else {
             this.mode.write(this.buffer);
+            this.buffer.terminator();
+            this.buffer.padding();
         }
-        this.buffer.terminator();
-        this.buffer.padding();
         this.buffer.errorCorrection();
         this.buffer.remainderBits();
         this.matrix = this.buildMatrix();
