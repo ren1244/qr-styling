@@ -1,18 +1,18 @@
 import NumericMode from './numeric.js';
 import AlphanumericMode from './alphanumeric.js';
 import KanjiMode from './kanji.js';
-import ByteMode from './byte.js';
+import Utf8ByteMode from './utf8.js';
 import dijkstra from 'dijkstrajs';
 
 // for start and end node
 class NullMode { }
 
 /**
- * @typedef {typeof NumericMode|typeof AlphanumericMode|typeof KanjiMode|typeof ByteMode|typeof NullMode} ModeClass
+ * @typedef {typeof NumericMode|typeof AlphanumericMode|typeof KanjiMode|typeof Utf8ByteMode|typeof NullMode} ModeClass
  */
 
 /**
- * @typedef {NumericMode|AlphanumericMode|KanjiMode|ByteMode} ModeInst
+ * @typedef {NumericMode|AlphanumericMode|KanjiMode|Utf8ByteMode} ModeInst
  */
 
 class Node {
@@ -117,7 +117,7 @@ function getBestPath(str, version, enableEci) {
     function pathTo(mode, pos, count) {
         const grp = nodeCollection.getGroup(pos - 1);
         for (let prevNode of grp) {
-            const eciFlag = enableEci && (prevNode.eciFlag || mode === ByteMode);
+            const eciFlag = enableEci && (prevNode.eciFlag || mode === Utf8ByteMode);
             let remainder = 0;
             if (mode === AlphanumericMode) {
                 remainder = ((mode === prevNode.mode ? prevNode.remainder : 0) + count) % 2;
@@ -142,15 +142,15 @@ function getBestPath(str, version, enableEci) {
         if (NumericMode.hasUnicode(unicode)) {
             pathTo(NumericMode, pos, 1);
             pathTo(AlphanumericMode, pos, 1);
-            pathTo(ByteMode, pos, nBytes);
+            pathTo(Utf8ByteMode, pos, nBytes);
         } else if (AlphanumericMode.hasUnicode(unicode)) {
             pathTo(AlphanumericMode, pos, 1);
-            pathTo(ByteMode, pos, nBytes);
+            pathTo(Utf8ByteMode, pos, nBytes);
         } else if (KanjiMode.hasUnicode(unicode)) {
             pathTo(KanjiMode, pos, 1);
-            pathTo(ByteMode, pos, nBytes);
+            pathTo(Utf8ByteMode, pos, nBytes);
         } else {
-            pathTo(ByteMode, pos, nBytes);
+            pathTo(Utf8ByteMode, pos, nBytes);
         }
     }
 

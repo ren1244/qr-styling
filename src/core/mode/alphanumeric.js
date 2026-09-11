@@ -112,6 +112,14 @@ class AlphanumericMode {
     getName() {
         return 'Alphanumeric';
     }
+
+    /**
+     * 把 data 資訊寫入 segments
+     * @param {array} segments 
+     */
+    dumpData(segments) {
+        segments.push({ mode: 'alphanumeric', data: this.data });
+    }
 }
 
 export default AlphanumericMode;

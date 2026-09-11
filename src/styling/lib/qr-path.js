@@ -73,11 +73,19 @@ function qrPath(mtx, width, height, rawFlag) {
 
         const p0 = result[0];
         const p1 = result[1];
-        const p2 = result[result.length - 1];
+        const p2 = result[result.length - 2];
+        const p3 = result[result.length - 1];
         const divisor = width + 1;
-        const crossProduct = (p1 % divisor - p0 % divisor) * ((p2 / divisor >>> 0) - (p0 / divisor >>> 0)) - ((p1 / divisor >>> 0) - (p0 / divisor >>> 0)) * (p2 % divisor - p0 % divisor);
-        if (crossProduct === 0) {
-            result[0] = p2;
+        if ( // p0, p1, p3 是否一直線
+            (p1 % divisor - p0 % divisor) * ((p3 / divisor >>> 0) - (p0 / divisor >>> 0)) -
+            ((p1 / divisor >>> 0) - (p0 / divisor >>> 0)) * (p3 % divisor - p0 % divisor) === 0
+        ) {
+            result[0] = p3;
+            --result.length;
+        } else if ( // p0, p2, p3 是否一直線
+            (p2 % divisor - p0 % divisor) * ((p3 / divisor >>> 0) - (p0 / divisor >>> 0)) -
+            ((p2 / divisor >>> 0) - (p0 / divisor >>> 0)) * (p3 % divisor - p0 % divisor) === 0
+        ) {
             --result.length;
         }
         counters.push(result);

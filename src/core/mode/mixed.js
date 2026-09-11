@@ -50,6 +50,19 @@ class MixedMode {
     getName() {
         return this.data.length === 1 ? this.data[0].getName() : 'Mixed: ' + this.data.map(m => m.getName()).join(' + ');
     }
+
+    /**
+     * 把 data 資訊寫入 segments
+     * @param {array} segments 
+     */
+    dumpData(segments) {
+        if (this.eci) {
+            segments.push({ mode: 'eci', data: 26 });
+        }
+        for (let mode of this.data) {
+            mode.dumpData(segments);
+        }
+    }
 }
 
 export default MixedMode;

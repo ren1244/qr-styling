@@ -33,6 +33,7 @@ const qr = new QrCode('Some Input Data', {
     version: 0,           // QR Code version (0 for automatic, or 1-40), default is 0
     enableEci: false,     // Whether to enable ECI, default is false
     modes: [MixedMode],   // Array of allowed encoding modes, default is [MixedMode]
+    autoECLevel: true,    // As long as the version remains unchanged, automatically upgrade the error correction level. Default is false
 });
 
 // Select styling and render
@@ -95,26 +96,27 @@ Creates a `QrCore` instance responsible for data encoding and matrix generation.
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `data` | `string` | **Yes** | The content to be encoded into the QR Code (e.g., URL or text). |
+| `data` | `string` \| `{mode, data}[]` | **Yes** | The content to be encoded. Accepts a `string` (auto-selected from configured `modes` option) or an array of segment objects (`{mode, data}`) for custom mode control. |
 | `option` | `QrCodeOptions` | No | QR Code options. |
 
 * **QrCodeOptions Properties**:
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `errorCorrection` | `"L" \| "M" \| "Q" \| "H"` | `"M"` | Error correction level(`L`: 7%, `M`: 15%, `Q`: 25%, `H`: 30%). |
+| `errorCorrection` | `"L" \| "M" \| "Q" \| "H"` | `"M"` | Error correction level (`L`: 7%, `M`: 15%, `Q`: 25%, `H`: 30%). |
 | `version` | `number` | `0` | QR Code version (`0` for auto-detection, or specify `1` to `40`). |
 | `enableEci` | `boolean` | `false` | Whether to enable ECI (Extended Channel Interpretation). |
-| `modes` | `(AlphanumericMode \| ByteMode \| KanjiMode \| NumericMode \| MixedMode)[]` | `[MixedMode]` | Array of allowed encoding modes. |
+| `modes` | `(AlphanumericMode \| Utf8ByteMode \| KanjiMode \| NumericMode \| MixedMode)[]` | `[MixedMode]` | Array of allowed encoding modes. |
+| `autoECLevel` | `boolean` | `false` | As long as the version remains unchanged, automatically upgrade the error correction level. |
 
 * **Example**
 
 ```javascript
-import { QrCore, AlphanumericMode, NumericMode, ByteMode } from '@ren1244/qr-styling';
+import { QrCore, AlphanumericMode, NumericMode, Utf8ByteMode } from '@ren1244/qr-styling';
 
 const core = new QrCore("https://example.com", {
     errorCorrection: "H",
-    modes: [AlphanumericMode, NumericMode, ByteMode]
+    modes: [AlphanumericMode, NumericMode, Utf8ByteMode]
 });
 ```
 
@@ -143,6 +145,20 @@ Gets whether a specific coordinate point is a dark or light module.
 * **Parameters**: None
 * **Returns**: `number|null` - The applied mask version.
 
+### `QrCore.prototype.getDetail()`
+
+* **Parameters**: None
+* **Returns**: `object` - An object containing the QR Code encoding configurations and raw byte segments.
+
+#### Return Value Structure
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `version` | `number` | QR Code version number (`1` – `40`). |
+| `errorCorrectionLevel` | `string` | Error correction level (`'L'`, `'M'`, `'Q'`, `'H'`). |
+| `mask` | `number` | The applied mask pattern reference (`0` – `7`). |
+| `segments` | `{ mode: string, data: string \| Uint8Array  \| number }` | List of encoded data segments . Possible `mode` values: `'eci'`, `'alphanumeric'`, `'byte'`, `'kanji'`, `'numeric'`. |
+
 ----
 
 ### `new QrCode(data, [option])`
@@ -158,6 +174,23 @@ const qr = new QrCode("https://example.com", {
     errorCorrection: "H",
 });
 ```
+
+#### Instance Properties
+
+##### `size`
+
+* **Type**: `number`
+* **Description**: The grid size (number of modules per side) of the QR Code.
+
+##### `data`
+
+* **Type**: `Uint8Array`
+* **Description**: The module grid data, stored as a `Uint8Array` of length `size * size` where each element represents a black or white module.
+
+##### `detail`
+
+* **Type**: `{ getDetail: () => object }`
+* **Description**: An object containing low-level encoding details. Call `qr.detail.getDetail()` to retrieve the breakdown (returns the same output as `QrCore.prototype.getDetail()` ).
 
 ### `QrCode.registryStyling(styling, stylingClass)` (inheriting from `QrBase`)
 
@@ -213,7 +246,7 @@ Draws this style onto a canvas at a given location (its color and coordinate sys
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `canvas` | `HtmlCanvasElement` | **Yes** | A `Canvas` object compatible with `HtmlCanvasElement`. |
+| `canvas` | `HTMLCanvasElement` | **Yes** | A `Canvas` object compatible with `HTMLCanvasElement`. |
 | `x` | `number` | **Yes** | The x-coordinate. |
 | `y` | `number` | **Yes** | The y-coordinate. |
 | `edgeSize` | `number` | **Yes** | The side length of the QR Code (excluding quiet zones). |
@@ -221,6 +254,31 @@ Draws this style onto a canvas at a given location (its color and coordinate sys
 * **Returns**: None
 
 ## Advanced Usage
+
+### Custom Input Data
+
+When passing a plain string, the encoder automatically selects the optimal mode **from the available `modes` option** to yield the shortest data length.  
+If you need manual control over mode selection, you can pass an array of `{ mode, data }` segments instead:
+
+```javascript
+import { QrCode, AlphanumericMode, Utf8ByteMode, RawByteMode } from "@ren1244/qr-styling";
+
+// Create QR Code with custom segments
+const qr = new QrCode([
+    { mode: AlphanumericMode, data: "ABC123" },
+    { mode: Utf8ByteMode, data: "https" },
+    { mode: RawByteMode, data: new Uint8Array([65, 66, 67]) },
+]);
+```
+
+| Mode | `data` Type | Description |
+| :--- | :--- | :--- |
+| `AlphanumericMode` | `string` | Uppercase letters, digits, and special characters |
+| `NumericMode` | `string` | Digits (0-9) |
+| `KanjiMode` | `string` | Shift JIS Kanji characters |
+| `Utf8ByteMode` | `string` | UTF-8 encoded text |
+| `RawByteMode` | `Uint8Array` | Binary data |
+| `MixedMode` | `string` | Auto-segmented string (rarely used manually) |
 
 ### Creating Custom Styles
 
