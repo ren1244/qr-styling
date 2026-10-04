@@ -394,7 +394,13 @@ class QrCode {
 
         // 確認 version 與 errorCorrection
         if (this.data instanceof Uint8Array) {
-            if (!option.version || !option.errorCorrection || !option.mask || this.version === 0 || this.mask < 0) {
+            if (
+                option.version === undefined ||
+                option.errorCorrection === undefined ||
+                option.mask === undefined ||
+                this.version === 0 ||
+                this.mask < 0
+            ) {
                 throw 'should sepcify option.version, option.errorCorrection and option.mask';
             }
         } else {
